@@ -138,8 +138,7 @@ struct level_pwad_info_t
 	
 	std::vector<BossAction> bossactions;
 	bool			bossactions_donothing;
-
-	level_pwad_info_t();
+	
 	BOOL exists() const
 	{
 		return this->mapname[0] != '\0';
