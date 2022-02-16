@@ -309,7 +309,7 @@ inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
 	BYTE in; arc >> in; out = (DPusher::EPusher)in; return arc;
 }
 
-BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote);
+bool P_CheckKeys(player_t *p, card_t lock, bool remote);
 
 // Define values for map objects
 #define MO_TELEPORTMAN			14

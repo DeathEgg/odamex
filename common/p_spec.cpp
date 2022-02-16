@@ -833,90 +833,87 @@ bool P_CheckTag(line_t* line)
  *no assumptions about how the compiler packs the animdefs array.
  *
  */
-void P_InitPicAnims (void)
+void P_InitPicAnims()
 {
-	byte *animdefs, *anim_p;
-
 	// denis - allow reinitialisation
-	if(anims)
+	if (anims)
 	{
 		M_Free(anims);
-		lastanim = 0;
+		lastanim = NULL;
 		maxanims = 0;
 	}
 
 	// [RH] Load an ANIMDEFS lump first
-	P_InitAnimDefs ();
+	P_InitAnimDefs();
 
-	if (W_CheckNumForName ("ANIMATED") == -1)
+	if (W_CheckNumForName("ANIMATED") == -1)
 		return;
 
-	animdefs = (byte *)W_CacheLumpName ("ANIMATED", PU_STATIC);
+	byte* animdefs = (byte*)W_CacheLumpName("ANIMATED", PU_STATIC);
 
 	// Init animation
-
-		for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
+	for (byte* anim_p = animdefs; *anim_p != 255; anim_p += 23)
+	{
+		// 1/11/98 killough -- removed limit by array-doubling
+		if (lastanim >= anims + maxanims)
 		{
-			// 1/11/98 killough -- removed limit by array-doubling
-			if (lastanim >= anims + maxanims)
-			{
-				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
-				lastanim = anims + maxanims;
-				maxanims = newmax;
-			}
+			const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
+			anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
+			lastanim = anims + maxanims;
+			maxanims = newmax;
+		}
 
-			if (*anim_p /* .istexture */ & 1)
-			{
-				// different episode ?
-				if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
-					R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
-					continue;
+		if (*anim_p /* .istexture */ & 1)
+		{
+			// different episode ?
+			if (R_CheckTextureNumForName(anim_p + 10 /* .startname */) == -1 ||
+				R_CheckTextureNumForName(anim_p + 1 /* .endname */) == -1)
+				continue;
 
-				lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-				/*if (*anim_p & 2)
-				{ // [RH] Bit 1 set means allow decals on walls with this texture
-					texturenodecals[lastanim->basepic] = 0;
-				}
-				else
-				{
-					texturenodecals[lastanim->basepic] = 1;
-				}*/
+			lastanim->basepic = R_TextureNumForName(anim_p + 10 /* .startname */);
+			lastanim->numframes = R_TextureNumForName(anim_p + 1 /* .endname */)
+								  - lastanim->basepic + 1;
+			/*if (*anim_p & 2)
+			{ // [RH] Bit 1 set means allow decals on walls with this texture
+				texturenodecals[lastanim->basepic] = 0;
 			}
 			else
 			{
-				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
-					continue;
-
-				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-			}
-
-			lastanim->istexture = *anim_p /* .istexture */;
-			lastanim->uniqueframes = false;
-			lastanim->curframe = 0;
-
-			if (lastanim->numframes < 2)
-				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
-						 anim_p + 10 /* .startname */,
-						 anim_p + 1 /* .endname */);
-
-			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
-						/* .speed */
-						(anim_p[19] << 0) |
-						(anim_p[20] << 8) |
-						(anim_p[21] << 16) |
-						(anim_p[22] << 24);
-
-			lastanim->countdown--;
-
-			lastanim++;
+				texturenodecals[lastanim->basepic] = 1;
+			}*/
 		}
-	Z_Free (animdefs);
+		else
+		{
+			if (W_CheckNumForName((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
+				W_CheckNumForName((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
+				continue;
+
+			lastanim->basepic = R_FlatNumForName(anim_p + 10 /* .startname */);
+			lastanim->numframes = R_FlatNumForName(anim_p + 1 /* .endname */)
+								  - lastanim->basepic + 1;
+		}
+
+		lastanim->istexture = *anim_p /* .istexture */;
+		lastanim->uniqueframes = false;
+		lastanim->curframe = 0;
+
+		if (lastanim->numframes < 2)
+			Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
+					 anim_p + 10 /* .startname */,
+					 anim_p + 1 /* .endname */);
+
+		lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
+					/* .speed */
+					(anim_p[19] << 0) |
+					(anim_p[20] << 8) |
+					(anim_p[21] << 16) |
+					(anim_p[22] << 24);
+
+		lastanim->countdown--;
+
+		lastanim++;
+	}
+	Z_Free(animdefs);
 }
 
 
@@ -931,17 +928,15 @@ void P_InitPicAnims (void)
 //
 // Returns the next special sector attached to this sector
 // with a certain special.
-sector_t *P_NextSpecialSector (sector_t *sec, int type, sector_t *nogood)
+sector_t *P_NextSpecialSector(sector_t *sec, int type, sector_t *nogood)
 {
 	sector_t *tsec;
-	int i;
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
 		line_t *ln = sec->lines[i];
 
-		if (!(ln->flags & ML_TWOSIDED) ||
-			!(tsec = ln->frontsector))
+		if (!(ln->flags & ML_TWOSIDED) || !(tsec = ln->frontsector))
 			continue;
 
 		if (sec == tsec)
@@ -966,24 +961,21 @@ sector_t *P_NextSpecialSector (sector_t *sec, int type, sector_t *nogood)
 // P_FindLowestFloorSurrounding()
 // FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS
 //
-fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
+fixed_t P_FindLowestFloorSurrounding(sector_t* sec)
 {
-	int i;
-	line_t *check;
-	sector_t *other;
 	fixed_t height = P_FloorHeight(sec);
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
-		check = sec->lines[i];
-		other = getNextSector (check,sec);
+		line_t* check = sec->lines[i];
+		sector_t* other = getNextSector(check, sec);
 
 		if (!other)
 			continue;
 
-		fixed_t v1height =
+		const fixed_t v1height =
 			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
+		const fixed_t v2height =
 			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
 
 		if (v1height < height)
@@ -1000,17 +992,14 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 // P_FindHighestFloorSurrounding()
 // FIND HIGHEST FLOOR HEIGHT IN SURROUNDING SECTORS
 //
-fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
+fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 {
-	int i;
-	line_t *check;
-	sector_t *other;
 	fixed_t height = MININT;
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
-		check = sec->lines[i];
-		other = getNextSector(check,sec);
+		line_t* check = sec->lines[i];
+		sector_t* other = getNextSector(check, sec);
 
 		if (!other)
 			continue;
@@ -1039,10 +1028,10 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-fixed_t P_FindNextHighestFloor (sector_t *sec)
+fixed_t P_FindNextHighestFloor(sector_t *sec)
 {
 	sector_t *other;
-	fixed_t ogheight = P_FloorHeight(sec);
+	const fixed_t ogheight = P_FloorHeight(sec);
 	fixed_t height = MAXINT;
 
     for (int i = 0; i < sec->linecount; i++)
@@ -1085,7 +1074,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
 fixed_t P_FindNextLowestFloor(sector_t *sec)
 {
 	sector_t *other;
-	fixed_t ogheight = P_FloorHeight(sec);
+	const fixed_t ogheight = P_FloorHeight(sec);
 	fixed_t height = MININT;
 
     for (int i = 0; i < sec->linecount; i++)
@@ -1124,10 +1113,10 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-fixed_t P_FindNextLowestCeiling (sector_t *sec)
+fixed_t P_FindNextLowestCeiling(sector_t *sec)
 {
 	sector_t *other;
-	fixed_t ogheight = P_CeilingHeight(sec);
+	const fixed_t ogheight = P_CeilingHeight(sec);
 	fixed_t height = MININT;
 
     for (int i = 0; i < sec->linecount; i++)
@@ -1167,10 +1156,10 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-fixed_t P_FindNextHighestCeiling (sector_t *sec)
+fixed_t P_FindNextHighestCeiling(sector_t *sec)
 {
 	sector_t *other;
-	fixed_t ogheight = P_CeilingHeight(sec);
+	const fixed_t ogheight = P_CeilingHeight(sec);
 	fixed_t height = MAXINT;
 
     for (int i = 0; i < sec->linecount; i++)
@@ -1200,24 +1189,21 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
 //
 // FIND LOWEST CEILING IN THE SURROUNDING SECTORS
 //
-fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
+fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
 {
-	int i;
-	line_t *check;
-	sector_t *other;
 	fixed_t height = MAXINT;
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
-		check = sec->lines[i];
-		other = getNextSector(check,sec);
+		line_t* check = sec->lines[i];
+		sector_t* other = getNextSector(check, sec);
 
 		if (!other)
 			continue;
 
-		fixed_t v1height =
+		const fixed_t v1height =
 			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
+		const fixed_t v2height =
 			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
 
 		if (v1height < height)
@@ -1232,24 +1218,21 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 //
 // FIND HIGHEST CEILING IN THE SURROUNDING SECTORS
 //
-fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
+fixed_t P_FindHighestCeilingSurrounding(sector_t *sec)
 {
-	int i;
-	line_t *check;
-	sector_t *other;
 	fixed_t height = MININT;
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
-		check = sec->lines[i];
-		other = getNextSector (check,sec);
+		line_t* check = sec->lines[i];
+		sector_t* other = getNextSector(check, sec);
 
 		if (!other)
 			continue;
 
-		fixed_t v1height =
+		const fixed_t v1height =
 			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
+		const fixed_t v2height =
 			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
 
 		if (v1height > height)
@@ -1269,17 +1252,15 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (sector_t *sec)
+fixed_t P_FindShortestTextureAround(sector_t *sec)
 {
 	int minsize = MAXINT;
-	side_t *side;
-	int i;
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = &sides[(sec->lines[i])->sidenum[0]];
+			side_t* side = &sides[(sec->lines[i])->sidenum[0]];
 			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
 				minsize = textureheight[side->bottomtexture];
 
@@ -1303,17 +1284,15 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (sector_t *sec)
+fixed_t P_FindShortestUpperAround(sector_t *sec)
 {
 	int minsize = MAXINT;
-	side_t *side;
-	int i;
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = &sides[(sec->lines[i])->sidenum[0]];
+			side_t* side = &sides[(sec->lines[i])->sidenum[0]];
 			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
 				minsize = textureheight[side->toptexture];
 
@@ -1342,15 +1321,13 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec)
+sector_t *P_FindModelFloorSector(fixed_t floordestheight, sector_t *sec)
 {
-	sector_t *other;
-
-    //jff 5/23/98 don't disturb sec->linecount while searching
+	//jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
     for (int i = 0; i < sec->linecount; i++)
     {
-        other = getNextSector(sec->lines[i], sec);
+        sector_t* other = getNextSector(sec->lines[i], sec);
         if (other != NULL &&
         	(P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other) == floordestheight ||
         	 P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other) == floordestheight))
@@ -1379,15 +1356,13 @@ sector_t *P_FindModelFloorSector (fixed_t floordestheight, sector_t *sec)
 // [SL] Changed to use ZDoom 1.23's version of this function to account
 // for sloped sectors.
 //
-sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
+sector_t *P_FindModelCeilingSector(fixed_t ceildestheight, sector_t *sec)
 {
-	sector_t *other;
-
-    //jff 5/23/98 don't disturb sec->linecount while searching
+	//jff 5/23/98 don't disturb sec->linecount while searching
     // but allow early exit in old demos
     for (int i = 0; i < sec->linecount; i++)
     {
-        other = getNextSector(sec->lines[i], sec);
+        sector_t* other = getNextSector(sec->lines[i], sec);
         if (other != NULL &&
         	(P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other) == ceildestheight ||
         	 P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other) == ceildestheight))
@@ -1406,7 +1381,7 @@ sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 // Find the next sector with a specified tag.
 // Rewritten by Lee Killough to use chained hashing to improve speed
 
-int P_FindSectorFromTag (int tag, int start)
+int P_FindSectorFromTag(int tag, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag :
 		sectors[(unsigned) tag % (unsigned) numsectors].firsttag;
@@ -1417,7 +1392,7 @@ int P_FindSectorFromTag (int tag, int start)
 
 // killough 4/16/98: Same thing, only for linedefs
 
-int P_FindLineFromID (int id, int start)
+int P_FindLineFromID(int id, int start)
 {
 	start = start >= 0 ? lines[start].nextid :
 		lines[(unsigned) id % (unsigned) numlines].firstid;
@@ -1429,18 +1404,13 @@ int P_FindLineFromID (int id, int start)
 //
 // Find minimum light from an adjacent sector
 //
-int P_FindMinSurroundingLight (sector_t *sector, int max)
+int P_FindMinSurroundingLight(sector_t *sector, int max)
 {
-	int 		i;
-	int 		min;
-	line_t* 	line;
-	sector_t*	check;
-
-	min = max;
-	for (i=0 ; i < sector->linecount ; i++)
+	int min = max;
+	for (int i = 0 ; i < sector->linecount ; i++)
 	{
-		line = sector->lines[i];
-		check = getNextSector(line,sector);
+		line_t* line = sector->lines[i];
+		sector_t* check = getNextSector(line, sector);
 
 		if (!check)
 			continue;
@@ -1638,7 +1608,7 @@ bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote)
 	// so print an appropriate message and grunt.
 	if (player->mo == consoleplayer().camera)
 	{
-		int keytrysound = S_FindSound("misc/keytry");
+		const int keytrysound = S_FindSound("misc/keytry");
 		if (keytrysound > -1)
 		{
 			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
@@ -1677,7 +1647,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 	const OString* msg = NULL;
 
 	// does this line special distinguish between skulls and keys?
-	int skulliscard = (line->special & LockedNKeys) >> LockedNKeysShift;
+	const int skulliscard = (line->special & LockedNKeys) >> LockedNKeysShift;
 
 	// determine for each case of lock type if player's keys are adequate
 	switch ((line->special & LockedKey) >> LockedKeyShift)
@@ -1791,7 +1761,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 	// so print an appropriate message and grunt.
 	if (player->mo == consoleplayer().camera)
 	{
-		int keytrysound = S_FindSound("misc/keytry");
+		const int keytrysound = S_FindSound("misc/keytry");
 		if (keytrysound > -1)
 		{
 			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
@@ -1815,7 +1785,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 //	Returns true if the player has the desired key,
 //	false otherwise.
 
-BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
+bool P_CheckKeys(player_t *p, card_t lock, bool remote)
 {
 	if ((lock & 0x7f) == NoKey)
 		return true;
@@ -1824,17 +1794,16 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		return false;
 
 	const OString* msg = NULL;
-	BOOL bc, rc, yc, bs, rs, ys;
-	BOOL equiv = lock & 0x80;
+	const bool equiv = lock & 0x80;
 
         lock = (card_t)(lock & 0x7f);
 
-	bc = p->cards[it_bluecard];
-	rc = p->cards[it_redcard];
-	yc = p->cards[it_yellowcard];
-	bs = p->cards[it_blueskull];
-	rs = p->cards[it_redskull];
-	ys = p->cards[it_yellowskull];
+	bool bc = p->cards[it_bluecard];
+	bool rc = p->cards[it_redcard];
+	bool yc = p->cards[it_yellowcard];
+	bool bs = p->cards[it_blueskull];
+	bool rs = p->cards[it_redskull];
+	bool ys = p->cards[it_yellowskull];
 
 	if (equiv) {
 		bc = bs = (bc || bs);
@@ -1899,7 +1868,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	// so print an appropriate message and grunt.
 	if (p->mo == consoleplayer().camera)
 	{
-		int keytrysound = S_FindSound ("misc/keytry");
+		const int keytrysound = S_FindSound ("misc/keytry");
 		if (keytrysound > -1)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
@@ -2217,23 +2186,18 @@ void P_CollectSecretVanilla(sector_t* sector, player_t* player)
 // Animate planes, scroll walls, etc.
 //
 
-void P_UpdateSpecials (void)
+void P_UpdateSpecials()
 {
-	anim_t *anim;
-	int i;
-
 	// ANIMATE FLATS AND TEXTURES GLOBALLY
 	// [RH] Changed significantly to work with ANIMDEFS lumps
-	for (anim = anims; anim < lastanim; anim++)
+	for (anim_t* anim = anims; anim < lastanim; anim++)
 	{
 		if (--anim->countdown == 0)
 		{
-			int speedframe;
-
 			anim->curframe = (anim->numframes) ?
-					(anim->curframe + 1) % anim->numframes : 0;
+				                 (anim->curframe + 1) % anim->numframes : 0;
 
-			speedframe = (anim->uniqueframes) ? anim->curframe : 0;
+			const int speedframe = (anim->uniqueframes) ? anim->curframe : 0;
 
 			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
 				anim->countdown = anim->speedmin[speedframe];
@@ -2248,15 +2212,15 @@ void P_UpdateSpecials (void)
 			int pic = anim->framepic[anim->curframe];
 
 			if (anim->istexture)
-				for (i = 0; i < anim->numframes; i++)
+				for (int i = 0; i < anim->numframes; i++)
 					texturetranslation[anim->framepic[i]] = pic;
 			else
-				for (i = 0; i < anim->numframes; i++)
+				for (int i = 0; i < anim->numframes; i++)
 					flattranslation[anim->framepic[i]] = pic;
 		}
 		else
 		{
-			for (i = anim->basepic; i < anim->basepic + anim->numframes; i++)
+			for (int i = anim->basepic; i < anim->basepic + anim->numframes; i++)
 			{
 				int pic = anim->basepic + (anim->curframe + i) % anim->numframes;
 
@@ -2281,10 +2245,9 @@ CVAR_FUNC_IMPL (sv_forcewater)
 {
 	if (gamestate == GS_LEVEL)
 	{
-		int i;
-		byte set = var ? 2 : 0;
+		const byte set = var ? 2 : 0;
 
-		for (i = 0; i < numsectors; i++)
+		for (int i = 0; i < numsectors; i++)
 		{
 			if (sectors[i].heightsec &&
 				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
@@ -2300,14 +2263,11 @@ CVAR_FUNC_IMPL (sv_forcewater)
 * Sets up map sector line specials, thinkers, and other things
 * needed to make Doom interesting.
 */
-void P_SetupWorldState(void)
+void P_SetupWorldState()
 {
-	sector_t* sector;
-	int i;
-
 	//	Init special SECTORs.
-	sector = sectors;
-	for (i = 0; i < numsectors; i++, sector++)
+	sector_t* sector = sectors;
+	for (int i = 0; i < numsectors; i++, sector++)
 	{
 		map_format.init_sector_special(sector);
 	}
@@ -2356,7 +2316,7 @@ void P_ClearNonGeneralizedSectorSpecial(sector_t* sector)
 
 void P_SpawnPhasedLight(sector_t* sector, int base, int index)
 {
-	int i, b;
+	int i;
 
 	if (index == -1)
 	{ // sector->lightlevel as the index
@@ -2367,7 +2327,7 @@ void P_SpawnPhasedLight(sector_t* sector, int base, int index)
 		i = index;
 	}
 
-	b = base & 255;
+	int b = base & 255;
 
 	new DPhased(sector, b, i);
 
@@ -2463,12 +2423,7 @@ void DScroller::RunThink ()
 
 	switch (m_Type)
 	{
-		sector_t *sec;
-		fixed_t height, waterheight;	// killough 4/4/98: add waterheight
-		msecnode_t *node;
-		AActor *thing;
-
-		case sc_side:				// killough 3/7/98: Scroll wall texture
+	case sc_side:				// killough 3/7/98: Scroll wall texture
 			sides[m_Affectee].textureoffset += dx;
 			sides[m_Affectee].rowoffset += dy;
 			break;
@@ -2489,13 +2444,15 @@ void DScroller::RunThink ()
 			// killough 3/20/98: use new sector list which reflects true members
 			// killough 3/27/98: fix carrier bug
 			// killough 4/4/98: Underwater, carry things even w/o gravity
-			sec = sectors + m_Affectee;
-			height = P_HighestHeightOfFloor(sec);
-			waterheight = sec->heightsec &&
-				P_HighestHeightOfFloor(sec->heightsec) > height ?
-				P_HighestHeightOfFloor(sec->heightsec) : MININT;
+			sector_t* sec = sectors + m_Affectee;
+			fixed_t height = P_HighestHeightOfFloor(sec);
+			fixed_t waterheight = sec->heightsec &&
+			                      P_HighestHeightOfFloor(sec->heightsec) > height
+				                      ? P_HighestHeightOfFloor(sec->heightsec)
+				                      : MININT;
+			AActor *thing;
 
-			for (node = sec->touching_thinglist; node; node = node->m_snext)
+			for (msecnode_t* node = sec->touching_thinglist; node; node = node->m_snext)
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
 					(!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
 					 thing->z < waterheight))
@@ -2531,7 +2488,7 @@ void DScroller::RunThink ()
 // accel: non-zero if this is an accelerative effect
 //
 
-DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
+DScroller::DScroller(EScrollType type, fixed_t dx, fixed_t dy,
 					  int control, int affectee, int accel)
 {
 	m_Type = type;
@@ -2558,7 +2515,7 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 //
 // killough 5/25/98: cleaned up arithmetic to avoid drift due to roundoff
 
-DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
+DScroller::DScroller(fixed_t dx, fixed_t dy, const line_t *l,
 					 int control, int accel)
 {
 	fixed_t x = abs(l->dx), y = abs(l->dy), d;
@@ -2577,8 +2534,8 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 
 	if ((m_Control = control) != -1)
 	{
-		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const sector_t *sector = &sectors[control];
+		const fixed_t height = sector->ceilingheight + sector->floorheight;
 
 		m_LastHeight = height;
 	}
@@ -2586,12 +2543,11 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 }
 
 // Initialize the scrollers
-static void P_SpawnScrollers(void)
+static void P_SpawnScrollers()
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0; i < numlines; i++, l++)
+	for (int i = 0; i < numlines; i++, l++)
 	{
 		map_format.spawn_scroller(l, i);
 	}
@@ -2599,7 +2555,7 @@ static void P_SpawnScrollers(void)
 
 fixed_t P_ArgToSpeed(byte arg)
 {
-	return (fixed_t)arg * FRACUNIT / 8;
+	return static_cast<fixed_t>(arg) * FRACUNIT / 8;
 }
 
 bool P_ArgToCrushType(byte arg)
@@ -2660,12 +2616,11 @@ bool P_ArgToCrushType(byte arg)
 //
 // Initialize the sectors where friction is increased or decreased
 
-static void P_SpawnFriction(void)
+static void P_SpawnFriction()
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0 ; i < numlines ; i++,l++)
+	for (int i = 0 ; i < numlines ; i++,l++)
 	{
 		map_format.spawn_friction(l);
 	}
@@ -2673,9 +2628,8 @@ static void P_SpawnFriction(void)
 
 void P_ApplySectorFriction(int tag, int value, bool use_thinker)
 {
-	int friction, movefactor, s;
-
-	friction = (0x1EB8 * value) / 0x80 + 0xD000;
+	int friction = (0x1EB8 * value) / 0x80 + 0xD000;
+	int movefactor;
 
 	// The following check might seem odd. At the time of movement,
 	// the move distance is multiplied by 'friction/0x10000', so a
@@ -2688,14 +2642,11 @@ void P_ApplySectorFriction(int tag, int value, bool use_thinker)
 
 
 	// killough 8/28/98: prevent odd situations
-	if (friction > FRACUNIT)
-		friction = FRACUNIT;
-	if (friction < 0)
-		friction = 0;
+	friction = clamp(friction, 0, FRACUNIT);
 	if (movefactor < 32)
 		movefactor = 32;
 
-	for (s = -1; (s = P_FindSectorFromTag(tag, s)) >= 0;)
+	for (int s = -1; (s = P_FindSectorFromTag(tag, s)) >= 0;)
 	{
 		// killough 8/28/98:
 		//
@@ -2772,7 +2723,7 @@ void P_ApplySectorFriction(int tag, int value, bool use_thinker)
 //
 // Add a push thinker to the thinker list
 
-DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
+DPusher::DPusher(DPusher::EPusher type, line_t *l, int magnitude, int angle,
 				  AActor *source, int affectee)
 {
 	m_Source = source ? source->ptr() : AActor::AActorPtr();
@@ -2806,16 +2757,16 @@ DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
 
 DPusher *tmpusher; // pusher structure for blockmap searches
 
-BOOL PIT_PushThing (AActor *thing)
+BOOL PIT_PushThing(AActor *thing)
 {
 	if (thing->player &&
 		!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 	{
-		int sx = tmpusher->m_X;
-		int sy = tmpusher->m_Y;
-		int dist = P_AproxDistance (thing->x - sx,thing->y - sy);
-		int speed = (tmpusher->m_Magnitude -
-					((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
+		const int sx = tmpusher->m_X;
+		const int sy = tmpusher->m_Y;
+		const int dist = P_AproxDistance (thing->x - sx,thing->y - sy);
+		const int speed = (tmpusher->m_Magnitude -
+		                   ((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
 
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
@@ -2840,20 +2791,11 @@ BOOL PIT_PushThing (AActor *thing)
 //
 extern fixed_t tmbbox[4];
 
-void DPusher::RunThink ()
+void DPusher::RunThink()
 {
-	sector_t *sec;
-	AActor *thing;
-	msecnode_t *node;
-	int xspeed,yspeed;
-	int xl,xh,yl,yh,bx,by;
-	int radius;
-	int ht = 0;
-
-	sec = sectors + m_Affectee;
-
 	// Be sure the special sector type is still turned on. If so, proceed.
 	// Else, bail out; the sector type has been changed on us.
+	sector_t* sec = sectors + m_Affectee;
 
 	if (!(sec->flags & SECF_PUSH))
 		return;
@@ -2881,31 +2823,35 @@ void DPusher::RunThink ()
 		// Seek out all pushable things within the force radius of this
 		// point pusher. Crosses sectors, so use blockmap.
 
-		tmpusher = this; // MT_PUSH/MT_PULL point source
-		radius = m_Radius; // where force goes to zero
+		tmpusher = this;             // MT_PUSH/MT_PULL point source
+		const int radius = m_Radius; // where force goes to zero
 		tmbbox[BOXTOP]    = m_Y + radius;
 		tmbbox[BOXBOTTOM] = m_Y - radius;
 		tmbbox[BOXRIGHT]  = m_X + radius;
 		tmbbox[BOXLEFT]   = m_X - radius;
 
-		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-		for (bx=xl ; bx<=xh ; bx++)
-			for (by=yl ; by<=yh ; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing);
+		const int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				P_BlockThingsIterator(bx, by, PIT_PushThing);
 		return;
 	}
+
+	int xspeed;
+	int yspeed;
+	int ht = 0;
 
 	// constant pushers p_wind and p_current
 
 	if (sec->heightsec) // special water sector?
 		ht = P_FloorHeight(sec->heightsec);
-	node = sec->touching_thinglist; // things touching this sector
-	for ( ; node ; node = node->m_snext)
+	msecnode_t* node = sec->touching_thinglist; // things touching this sector
+	for ( ; node; node = node->m_snext)
 	{
-		thing = node->m_thing;
+		AActor* thing = node->m_thing;
 		if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)
@@ -2974,13 +2920,10 @@ void DPusher::RunThink ()
 // P_GetPushThing() returns a pointer to an MT_PUSH or MT_PULL thing,
 // NULL otherwise.
 
-AActor *P_GetPushThing (int s)
+AActor *P_GetPushThing(int s)
 {
-	AActor* thing;
-	sector_t* sec;
-
-	sec = sectors + s;
-	thing = sec->thinglist;
+	const sector_t* sec = sectors + s;
+	AActor* thing = sec->thinglist;
 	while (thing)
 	{
 		switch (thing->type)
@@ -3001,12 +2944,11 @@ AActor *P_GetPushThing (int s)
 // Initialize the sectors where pushers are present
 //
 
-static void P_SpawnPushers(void)
+static void P_SpawnPushers()
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0; i < numlines; i++, l++)
+	for (int i = 0; i < numlines; i++, l++)
 	{
 		map_format.spawn_pusher(l);
 	}
@@ -3018,16 +2960,17 @@ static void P_SpawnPushers(void)
 ////////////////////////////////////////////////////////////////////////////
 
 // [AM] Trigger a special associated with an actor.
-bool A_CheckTrigger(AActor *mo, AActor *triggerer) {
+bool A_CheckTrigger(AActor *mo, AActor *triggerer)
+{
 	if (mo->special &&
 		(triggerer->player ||
 		 ((mo->flags & MF_AMBUSH) && (triggerer->flags2 & MF2_MCROSS)) ||
 		 ((mo->flags2 & MF2_DORMANT) && (triggerer->flags2 & MF2_PCROSS)))) {
-		int savedSide = TeleportSide;
+		const int savedSide = TeleportSide;
 		TeleportSide = 0;
-		bool res = (LineSpecials[mo->special](NULL, triggerer, mo->args[0],
-											 mo->args[1], mo->args[2],
-											 mo->args[3], mo->args[4]) != 0);
+		const bool res = (LineSpecials[mo->special](NULL, triggerer, mo->args[0],
+		                                            mo->args[1], mo->args[2],
+		                                            mo->args[3], mo->args[4]) != 0);
 		TeleportSide = savedSide;
 		return res;
 	}
@@ -3036,7 +2979,8 @@ bool A_CheckTrigger(AActor *mo, AActor *triggerer) {
 
 // [AM] Selectively trigger a list of sector action specials that are linked by
 //      their tracer fields based on the passed activation type.
-bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType) {
+bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType)
+{
 	bool trigger_action = false;
 
 	// The mobj type must agree with the activation type.

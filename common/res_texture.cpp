@@ -740,8 +740,8 @@ void TextureManager::readAnimatedLump()
 		if (anim.numframes <= 0)
 			continue;
 		anim.curframe = 0;
-			
-		int speed = LELONG(*(int*)(ptr + 19));
+
+		const int speed = LELONG(*(int*)(ptr + 19));
 		anim.countdown = speed - 1;
 
 		for (int i = 0; i < anim.numframes; i++)
@@ -789,7 +789,7 @@ void TextureManager::updateAnimatedTextures()
 
 			for (int frame1 = 0; frame1 < anim->numframes - 1; frame1++)
 			{
-				int frame2 = (frame1 + 1) % anim->numframes;
+				const int frame2 = (frame1 + 1) % anim->numframes;
 				getTexture(anim->framepic[frame2]);	// ensure Texture is still cached
 				mHandleMap[anim->framepic[frame1]] = mHandleMap[anim->framepic[frame2]]; 
 			}
