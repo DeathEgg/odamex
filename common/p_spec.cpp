@@ -201,7 +201,7 @@ int P_ArgToCrush(byte arg)
  */
 int P_IsUnderDamage(AActor* actor)
 {
-	const struct msecnode_s* seclist;
+	const msecnode_s* seclist;
 	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
 	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
@@ -235,15 +235,9 @@ bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
 		{
 			return true;
 		}
-		else
-		{
-			return false;
-		}
 	}
-	else
-	{
-		return false;
-	}
+
+	return false;
 }
 
 //
@@ -336,8 +330,6 @@ void P_RemoveMovingCeiling(sector_t *sector)
 		// mark the ceiling as invalid but don't remove from the list
 		if (!itr->moving_floor)
 			movingsectors.erase(itr);
-
-		return;
 	}
 }
 
@@ -361,8 +353,6 @@ void P_RemoveMovingFloor(sector_t *sector)
 		// mark the floor as invalid but don't remove from the list
 		if (!itr->moving_ceiling)
 			movingsectors.erase(itr);
-
-		return;
 	}
 }
 
@@ -481,7 +471,7 @@ typedef struct
 {
 	short 	basepic;
 	short	numframes;
-	byte 	istexture;
+	byte	istexture;
 	byte	uniqueframes;
 	byte	countdown;
 	byte	curframe;
@@ -505,7 +495,7 @@ static void P_SpawnFriction();		// phares 3/16/98
 static void P_SpawnPushers();		// phares 3/20/98
 static void P_SpawnExtra();
 
-static void ParseAnim(OScanner &os, byte istex);
+static void ParseAnim(OScanner &os, const bool istex);
 
 //
 //		Animating line specials
@@ -537,28 +527,28 @@ static void P_InitAnimDefs ()
 
 		while (os.scan())
 		{
-			if (os.compareToken("flat"))
+			if (os.compareTokenNoCase("flat"))
 			{
 				ParseAnim(os, false);
 			}
-			else if (os.compareToken("texture"))
+			else if (os.compareTokenNoCase("texture"))
 			{
 				ParseAnim(os, true);
 			}
-			else if (os.compareToken("switch"))   // Don't support switchdef yet...
+			else if (os.compareTokenNoCase("switch")) // Don't support switchdef yet...
 			{
 				//P_ProcessSwitchDef();
 				//os.error("switchdef not supported.");
 			}
-			else if (os.compareToken("warp"))
+			else if (os.compareTokenNoCase("warp"))
 			{
 				os.mustScan();
-				if (os.compareToken("flat"))
+				if (os.compareTokenNoCase("flat"))
 				{
 					os.mustScan();
 					flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
 				}
-				else if (os.compareToken("texture"))
+				else if (os.compareTokenNoCase("texture"))
 				{
 					// TODO: Make texture warping work with wall textures
 					os.mustScan();
@@ -573,20 +563,38 @@ static void P_InitAnimDefs ()
 	}
 }
 
-static void ParseAnim(OScanner &os, byte istex)
+static void ParseAnim(OScanner &os, const bool istex)
 {
 	anim_t sink;
-	short picnum;
 	anim_t *place;
-	byte min, max;
+
+	int defined = 0;
+	bool optional = false;
+	bool missing = false;
 
 	os.mustScan();
-	picnum = istex ? R_CheckTextureNumForName(os.getToken().c_str())
-		: W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
+	if (os.compareTokenNoCase("optional"))
+	{
+		optional = true;
+		os.mustScan();
+	}
+
+	const short picnum = istex
+	          ? R_CheckTextureNumForName(os.getToken().c_str())
+	          : W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
 
 	if (picnum == -1)
 	{ // Base pic is not present, so skip this definition
 		place = &sink;
+
+		if (optional)
+		{
+			missing = true;
+		}
+		else
+		{
+			os.warning("Can't find %s\n", os.getToken().c_str());
+		}
 	}
 	else
 	{
@@ -626,53 +634,89 @@ static void ParseAnim(OScanner &os, byte istex)
 
 	while (os.scan())
 	{
-		/*if (os.compareToken("allowdecals"))
+		if (os.compareTokenNoCase("allowdecals"))
 		{
-			if (istex && picnum >= 0)
+			/*if (istex && picnum >= 0)
 			{
 				texturenodecals[picnum] = 0;
-			}
-			continue;
+			}*/
 		}
-		else*/ if (!os.compareToken("pic"))
+		else if (os.compareTokenNoCase("oscillate"))
+		{
+			// todo
+		}
+		else if (os.compareTokenNoCase("random"))
+		{
+			// todo
+		}
+		else if (os.compareTokenNoCase("range"))
+		{
+			if (defined == 2)
+			{
+				os.error("You cannot use \"pic\" and \"range\" together in a "
+				               "single animation.");
+			}
+			if (defined == 1)
+			{
+				os.error("You can only use one \"range\" per animation.");
+			}
+			defined = 1;
+
+			// todo
+		}
+		else if (os.compareTokenNoCase("notrim"))
+		{
+			// todo
+		}
+		else if (os.compareTokenNoCase("pic"))
+		{
+			if (defined == 1)
+			{
+				os.error("You cannot use \"pic\" and \"range\" together in a "
+				               "single animation.");
+			}
+			defined = 2;
+
+			if (place->numframes == MAX_ANIM_FRAMES)
+			{
+				os.error("Animation has too many frames");
+			}
+
+			byte min = 1;
+			byte max = 1;
+
+			os.mustScanInt();
+			const int frame = os.getTokenInt();
+			os.mustScan();
+			if (os.compareTokenNoCase("tics"))
+			{
+				os.mustScanInt();
+				min = max = clamp(os.getTokenInt(), 0, 255);
+			}
+			else if (os.compareTokenNoCase("rand"))
+			{
+				os.mustScanInt();
+				int num = os.getTokenInt();
+				min = num >= 0 ? num : 0;
+				os.mustScanInt();
+				num = os.getTokenInt();
+				max = num <= 255 ? num : 255;
+			}
+			else
+			{
+				os.error("Must specify a duration for animation frame");
+			}
+
+			place->speedmin[place->numframes] = min;
+			place->speedmax[place->numframes] = max;
+			place->framepic[place->numframes] = frame + picnum - 1;
+			place->numframes++;
+		}
+		else
 		{
 			os.unScan();
 			break;
 		}
-
-		if (place->numframes == MAX_ANIM_FRAMES)
-		{
-			os.error("Animation has too many frames");
-		}
-
-		min = max = 1;	// Shut up, GCC
-
-		os.mustScanInt();
-		const int frame = os.getTokenInt();
-		os.mustScan();
-		if (os.compareToken("tics"))
-		{
-			os.mustScanInt();
-			min = max = clamp(os.getTokenInt(), 0, 255);
-		}
-		else if (os.compareToken("rand"))
-		{
-			os.mustScanInt();
-			int num = os.getTokenInt();
-			min = num >= 0 ? num : 0;
-			os.mustScanInt();
-			num = os.getTokenInt();
-			max = num <= 255 ? num : 255;
-		}
-		else
-		{
-			os.error("Must specify a duration for animation frame");
-		}
-
-		place->speedmin[place->numframes] = min;
-		place->speedmax[place->numframes] = max;
-		place->framepic[place->numframes] = frame + picnum - 1;
-		place->numframes++;
 	}
 
 	if (place->numframes < 2)
