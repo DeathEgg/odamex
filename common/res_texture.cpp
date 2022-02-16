@@ -102,14 +102,14 @@ void Res_ShutdownTextureManager()
 //
 static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int xoffs, int yoffs)
 {
-	int texwidth = texture->getWidth();
-	int texheight = texture->getHeight();
-	int patchwidth = LESHORT(*(short*)(lumpdata + 0));
+	const int texwidth = texture->getWidth();
+	const int texheight = texture->getHeight();
+	const int patchwidth = LESHORT(*(short*)(lumpdata + 0));
 
 	const int* colofs = (int*)(lumpdata + 8);
 
-	int x1 = MAX(xoffs, 0);
-	int x2 = MIN(xoffs + patchwidth - 1, texwidth - 1);
+	const int x1 = MAX(xoffs, 0);
+	const int x2 = MIN(xoffs + patchwidth - 1, texwidth - 1);
 
 	for (int x = x1; x <= x2; x++)
 	{
@@ -118,8 +118,8 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 		const byte* post = lumpdata + LELONG(colofs[x - xoffs]);
 		while (*post != 0xFF)
 		{
-			int posttopdelta = *(post + 0);
-			int postlength = *(post + 1);
+			const int posttopdelta = *(post + 0);
+			const int postlength = *(post + 1);
 
 			// handle DeePsea tall patches where topdelta is treated as a relative
 			// offset instead of an absolute offset
@@ -128,9 +128,9 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 			else
 				abstopdelta = posttopdelta;
 
-			int topoffset = yoffs + abstopdelta;
-			int y1 = MAX(topoffset, 0);
-			int y2 = MIN(topoffset + postlength - 1, texheight - 1);
+			const int topoffset = yoffs + abstopdelta;
+			const int y1 = MAX(topoffset, 0);
+			const int y2 = MIN(topoffset + postlength - 1, texheight - 1);
 
 			if (y1 <= y2)
 			{
@@ -172,14 +172,14 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
 	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
 
-	int dest_offset = dx1 * dest_texture->getHeight() + dy1;
+	const int dest_offset = dx1 * dest_texture->getHeight() + dy1;
 	byte* dest = dest_texture->getData() + dest_offset; 
 	byte* dest_mask = dest_texture->getMaskData() + dest_offset; 
 
 	fixed_t xfrac = 0;
 	for (int xcount = destwidth; xcount > 0; xcount--)
 	{
-		int source_offset = (sx1 + (xfrac >> FRACBITS)) * source_texture->getHeight() + sy1;
+		const int source_offset = (sx1 + (xfrac >> FRACBITS)) * source_texture->getHeight() + sy1;
 		const byte* source = source_texture->getData() + source_offset;
 		const byte* source_mask = source_texture->getMaskData() + source_offset;
 
@@ -198,8 +198,8 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	}
 
 	// copy the source texture's offset info
-	int xoffs = FixedDiv(source_texture->getOffsetX() << FRACBITS, xstep) >> FRACBITS;
-	int yoffs = FixedDiv(source_texture->getOffsetY() << FRACBITS, ystep) >> FRACBITS;
+	const int xoffs = FixedDiv(source_texture->getOffsetX() << FRACBITS, xstep) >> FRACBITS;
+	const int yoffs = FixedDiv(source_texture->getOffsetY() << FRACBITS, ystep) >> FRACBITS;
 	dest_texture->setOffsetX(xoffs);
 	dest_texture->setOffsetY(yoffs);
 }
@@ -231,7 +231,7 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 //
 const Texture* Res_LoadTexture(const char* name)
 {
-	texhandle_t texhandle = texturemanager.getHandle(name, Texture::TEX_PATCH);
+	const texhandle_t texhandle = texturemanager.getHandle(name, Texture::TEX_PATCH);
 	return texturemanager.getTexture(texhandle);
 }
 
@@ -515,13 +515,13 @@ void TextureManager::precache()
 //
 void TextureManager::readPNamesDirectory()
 {
-	int lumpnum = W_GetNumForName("PNAMES");
-	size_t lumplen = W_LumpLength(lumpnum);
+	const int lumpnum = W_GetNumForName("PNAMES");
+	const size_t lumplen = W_LumpLength(lumpnum);
 
 	byte* lumpdata = new byte[lumplen];
 	W_ReadLump(lumpnum, lumpdata);
 
-	int num_pname_mappings = LELONG(*((int*)(lumpdata + 0)));
+	const int num_pname_mappings = LELONG(*((int*)(lumpdata + 0)));
 	mPNameLookup = new int[num_pname_mappings];
 
 	for (int i = 0; i < num_pname_mappings; i++)
@@ -702,11 +702,11 @@ void TextureManager::readAnimDefLump()
 //
 void TextureManager::readAnimatedLump()
 {
-	int lumpnum = W_CheckNumForName("ANIMATED");
+	const int lumpnum = W_CheckNumForName("ANIMATED");
 	if (lumpnum == -1)
 		return;
 
-	size_t lumplen = W_LumpLength(lumpnum);
+	const size_t lumplen = W_LumpLength(lumpnum);
 	if (lumplen == 0)
 		return;
 
@@ -717,15 +717,15 @@ void TextureManager::readAnimatedLump()
 	{
 		anim_t anim;
 
-		Texture::TextureSourceType texture_type = *(ptr + 0) == 1 ?
-					Texture::TEX_WALLTEXTURE : Texture::TEX_FLAT;
+		const Texture::TextureSourceType texture_type = *(ptr + 0) == 1 ?
+			                                                Texture::TEX_WALLTEXTURE : Texture::TEX_FLAT;
 
 		const char* startname = (const char*)(ptr + 10);
 		const char* endname = (const char*)(ptr + 1);
 
-		texhandle_t start_texhandle =
+		const texhandle_t start_texhandle =
 				texturemanager.getHandle(startname, texture_type);
-		texhandle_t end_texhandle =
+		const texhandle_t end_texhandle =
 				texturemanager.getHandle(endname, texture_type);
 
 		if (start_texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
@@ -819,7 +819,7 @@ void TextureManager::generateNotFoundTexture()
 	const int width = 64, height = 64;
 
 	const texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
-	Texture* texture = createTexture(handle, width, height);
+	const Texture* texture = createTexture(handle, width, height);
 
 	if (clientside)
 	{
@@ -884,7 +884,7 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		mappatch_t	patches[1];
 	};
 
-	int lumpnum = W_CheckNumForName(lumpname);
+	const int lumpnum = W_CheckNumForName(lumpname);
 	if (lumpnum == -1)
 	{
 		if (iequals("TEXTURE1", lumpname))
@@ -892,16 +892,16 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		return;
 	}
 
-	size_t lumplen = W_LumpLength(lumpnum);
+	const size_t lumplen = W_LumpLength(lumpnum);
 	if (lumplen == 0)
 		return;
 
 	byte* lumpdata = new byte[lumplen];
 	W_ReadLump(lumpnum, lumpdata);
 
-	int* texoffs = (int*)(lumpdata + 4);
+	const int* texoffs = (int*)(lumpdata + 4);
 
-	int count = LELONG(*((int*)(lumpdata + 0)));
+	const int count = LELONG(*((int*)(lumpdata + 0)));
 	for (int i = 0; i < count; i++)
 	{
 		maptexture_t* mtexdef = (maptexture_t*)((byte*)lumpdata + LELONG(texoffs[i]));
@@ -911,7 +911,7 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		// Are there any ports besides ZDoom that handle duplicated texture names?
 		if (mTextureNameTranslationMap.find(uname) == mTextureNameTranslationMap.end())
 		{
-			size_t texdefsize = sizeof(texdef_t) + sizeof(texdefpatch_t) * (SAFESHORT(mtexdef->patchcount) - 1);
+			const size_t texdefsize = sizeof(texdef_t) + sizeof(texdefpatch_t) * (SAFESHORT(mtexdef->patchcount) - 1);
 			texdef_t* texdef = (texdef_t*)(new byte[texdefsize]); 	
 
 			texdef->width = SAFESHORT(mtexdef->width);
@@ -977,8 +977,8 @@ Texture* TextureManager::createTexture(texhandle_t texhandle, int width, int hei
 	height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
 
 	// server shouldn't allocate memory for texture data, only the header	
-	size_t texture_size = clientside ?
-			Texture::calculateSize(width, height) : sizeof(Texture);
+	const size_t texture_size = clientside ?
+		                            Texture::calculateSize(width, height) : sizeof(Texture);
 	
 	Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL);
 	texture->init(width, height);
@@ -1038,7 +1038,7 @@ texhandle_t TextureManager::getPatchHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getPatchHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str());
+	const int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getPatchHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1050,16 +1050,16 @@ texhandle_t TextureManager::getPatchHandle(const OString& name)
 //
 void TextureManager::cachePatch(texhandle_t handle)
 {
-	unsigned int lumpnum = handle & ~(PATCH_HANDLE_MASK | SPRITE_HANDLE_MASK);
+	const unsigned int lumpnum = handle & ~(PATCH_HANDLE_MASK | SPRITE_HANDLE_MASK);
 
-	unsigned int lumplen = W_LumpLength(lumpnum);
+	const unsigned int lumplen = W_LumpLength(lumpnum);
 	byte* lumpdata = new byte[lumplen];
 	W_ReadLump(lumpnum, lumpdata);
 
-	int width = LESHORT(*(short*)(lumpdata + 0));
-	int height = LESHORT(*(short*)(lumpdata + 2));
-	int offsetx = LESHORT(*(short*)(lumpdata + 4));
-	int offsety = LESHORT(*(short*)(lumpdata + 6));
+	const int width = LESHORT(*(short*)(lumpdata + 0));
+	const int height = LESHORT(*(short*)(lumpdata + 2));
+	const int offsetx = LESHORT(*(short*)(lumpdata + 4));
+	const int offsety = LESHORT(*(short*)(lumpdata + 6));
 
 	Texture* texture = createTexture(handle, width, height);
 	texture->mOffsetX = offsetx;
@@ -1143,7 +1143,7 @@ texhandle_t TextureManager::getFlatHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getFlatHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str(), ns_flats);
+	const int lumpnum = W_CheckNumForName(name.c_str(), ns_flats);
 	if (lumpnum >= 0)
 		return getFlatHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1160,8 +1160,8 @@ void TextureManager::cacheFlat(texhandle_t handle)
 {
 	// should we check that the handle is valid for a flat?
 
-	unsigned int lumpnum = (handle & ~FLAT_HANDLE_MASK) + mFirstFlatLumpNum;
-	unsigned int lumplen = W_LumpLength(lumpnum);
+	const unsigned int lumpnum = (handle & ~FLAT_HANDLE_MASK) + mFirstFlatLumpNum;
+	const unsigned int lumplen = W_LumpLength(lumpnum);
 
 	int width, height;	
 
@@ -1174,7 +1174,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	else
 		width = height = Log2(sqrt((double)lumplen));	// probably not pretty... 
 
-	Texture* texture = createTexture(handle, width, height);
+	const Texture* texture = createTexture(handle, width, height);
 
 	if (clientside)
 	{
@@ -1224,8 +1224,8 @@ void TextureManager::cacheWallTexture(texhandle_t handle)
 
 	texdef_t* texdef = mTextureDefinitions[handle & ~WALLTEXTURE_HANDLE_MASK];
 
-	int width = texdef->width;
-	int height = texdef->height;
+	const int width = texdef->width;
+	const int height = texdef->height;
 
 	Texture* texture = createTexture(handle, width, height);
 	if (texdef->scalex)
@@ -1244,12 +1244,12 @@ void TextureManager::cacheWallTexture(texhandle_t handle)
 		// compose the texture out of a set of patches
 		for (int i = 0; i < texdef->patchcount; i++)
 		{
-			texdefpatch_t* texdefpatch = &texdef->patches[i];
+			const texdefpatch_t* texdefpatch = &texdef->patches[i];
 			
 			if (texdefpatch->patch == -1)		// not found ?
 				continue;
 
-			unsigned int lumplen = W_LumpLength(texdefpatch->patch);
+			const unsigned int lumplen = W_LumpLength(texdefpatch->patch);
 			byte* lumpdata = new byte[lumplen];
 			W_ReadLump(texdefpatch->patch, lumpdata);
 			Res_DrawPatchIntoTexture(texture, lumpdata, texdefpatch->originx, texdefpatch->originy);
@@ -1280,7 +1280,7 @@ texhandle_t TextureManager::getRawTextureHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getRawTextureHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str());
+	const int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getRawTextureHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1297,12 +1297,12 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 	const int width = 320;
 	const int height = 200;
 
-	Texture* texture = createTexture(handle, width, height);
+	const Texture* texture = createTexture(handle, width, height);
 
 	if (clientside)
 	{
-		unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
-		unsigned int lumplen = W_LumpLength(lumpnum);
+		const unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
+		const unsigned int lumplen = W_LumpLength(lumpnum);
 
 		byte* lumpdata = new byte[lumplen];
 		W_ReadLump(lumpnum, lumpdata);
@@ -1333,7 +1333,7 @@ texhandle_t TextureManager::getPNGTextureHandle(unsigned int lumpnum)
 
 texhandle_t TextureManager::getPNGTextureHandle(const OString& name)
 {
-	int lumpnum = W_CheckNumForName(name.c_str());
+	const int lumpnum = W_CheckNumForName(name.c_str());
 	if (lumpnum >= 0)
 		return getPNGTextureHandle(lumpnum);
 	return NOT_FOUND_TEXTURE_HANDLE;
@@ -1395,9 +1395,9 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	byte* lumpdata = NULL;
 	png_byte* row_data = NULL;
 	MEMFILE* mfp = NULL;
-	
-	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
-	unsigned int lumplen = W_LumpLength(lumpnum);
+
+	const unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
+	const unsigned int lumplen = W_LumpLength(lumpnum);
 
 	char lumpname[9];
 	W_GetLumpName(lumpname, lumpnum);
@@ -1437,7 +1437,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	// read the png header
 	png_uint_32 width = 0, height = 0;
 	int bitsperpixel = 0, colortype = -1;
-	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
+	const png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
 
 	if (ret != 1)
 	{
@@ -1513,7 +1513,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 //
 texhandle_t TextureManager::getHandle(const OString& name, Texture::TextureSourceType type)
 {
-	OString uname(StdStringToUpper(name));
+	const OString uname(StdStringToUpper(name));
 
 	// sidedefs with the '-' texture indicate there should be no texture used
 	if (uname[0] == '-' && type == Texture::TEX_WALLTEXTURE)
@@ -1554,7 +1554,7 @@ texhandle_t TextureManager::getHandle(const OString& name, Texture::TextureSourc
 //
 texhandle_t TextureManager::getHandle(const char* name, Texture::TextureSourceType type)
 {
-	OString uname(StdStringToUpper(name, 8));
+	const OString uname(StdStringToUpper(name, 8));
 	return getHandle(uname, type);
 }
 
