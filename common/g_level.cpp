@@ -35,6 +35,7 @@
 #include "g_game.h"
 #include "gi.h"
 #include "i_system.h"
+#include "oscanner.h"
 #include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
@@ -278,7 +279,52 @@ void P_RemoveDefereds()
 // 	G_ParseMusInfo
 void G_ParseMusInfo()
 {
-	// Nothing yet...
+	int lump = -1;
+
+	while ((lump = W_FindLump("MUSINFO", lump)) != -1)
+	{
+		LevelInfos& levels = getLevelInfos();
+
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+		const OScannerConfig config = {
+		    "MUSINFO", // lumpName
+		    false,     // semiComments
+		    false,     // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+		while (os.scan())
+		{
+			const std::string map_name = os.getToken();
+			level_pwad_info_t& map = levels.findByName(map_name);
+
+			if (!map.exists())
+			{
+				// Don't abort for invalid maps
+				os.warning("Unknown map '%s'", map_name.c_str());
+			}
+			while (os.scan())
+			{
+				if (!IsNum(os.getToken().c_str()))
+				{
+					os.unScan();
+					break;
+				}
+
+				const int index = os.getTokenInt();
+				os.mustScan();
+				if (index > 0)
+				{
+					const std::string music = os.getToken();
+					if (map.exists())
+					{
+						//map->MusicMap[index] = music;
+					}
+				}
+			}
+		}
+	}
 }
 
 //
