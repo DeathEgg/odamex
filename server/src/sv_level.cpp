@@ -60,7 +60,7 @@
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 extern int nextupdate;
@@ -402,7 +402,7 @@ void G_InitNew (const char *mapname)
 		LevelInfos& levels = getLevelInfos();
 		for (size_t i = 0; i < levels.size(); i++)
 		{
-			level_pwad_info_t& level = levels.at(i);
+			level_info_t& level = levels.at(i);
 			level.flags &= ~LEVEL_VISITED;
 		}
 	}

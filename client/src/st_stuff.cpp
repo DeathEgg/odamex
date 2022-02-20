@@ -645,7 +645,7 @@ BEGIN_COMMAND (idmus)
 			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
 		}
 
-		level_pwad_info_t& info = levels.findByName(map);
+		level_info_t& info = levels.findByName(map);
 		if (level.levelnum != 0)
 		{
 			if (info.music[0])

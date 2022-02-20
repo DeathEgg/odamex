@@ -3829,7 +3829,7 @@ void P_DoDeferedScripts (void)
 	level.info->defered = NULL;
 }
 
-static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int script, int arg0, int arg1, int arg2, AActor *who)
+static void addDefered (level_info_t& i, acsdefered_t::EType type, int script, int arg0, int arg1, int arg2, AActor *who)
 {
 	if (i.levelnum != 0)
 	{

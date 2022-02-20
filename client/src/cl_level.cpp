@@ -57,7 +57,7 @@
 #include "m_wdlstats.h"
 
 
-#define lioffset(x)		offsetof(level_pwad_info_t,x)
+#define lioffset(x)		offsetof(level_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 void CL_ClearSectorSnapshots();
@@ -206,7 +206,7 @@ void G_InitNew (const char *mapname)
 		LevelInfos& levels = getLevelInfos();
 		for (size_t i = 0; i < levels.size(); i++)
 		{
-			level_pwad_info_t& level = levels.at(i);
+			level_info_t& level = levels.at(i);
 			level.flags &= ~LEVEL_VISITED;
 		}
 	}

@@ -1936,7 +1936,7 @@ static int PatchPars(int dummy)
 		}
 
 		LevelInfos& levels = getLevelInfos();
-		level_pwad_info_t& info = levels.findByName(mapname);
+		level_info_t& info = levels.findByName(mapname);
 
 		if (!info.exists())
 		{
@@ -2031,17 +2031,14 @@ static int PatchText(int oldSize)
 {
 	LevelInfos& levels = getLevelInfos();
 
-	int newSize;
 	char* oldStr;
 	char* newStr;
-	char* temp;
-	BOOL good;
+	bool good;
 	int result;
-	int i;
 	const OString* name = NULL;
 
 	// Skip old size, since we already know it
-	temp = Line2;
+	char* temp = Line2;
 	while (*temp > ' ')
 	{
 		temp++;
@@ -2056,7 +2053,7 @@ static int PatchText(int oldSize)
 		Printf(PRINT_HIGH, "Text chunk is missing size of new string.\n");
 		return 2;
 	}
-	newSize = atoi(temp);
+	int newSize = atoi(temp);
 
 	oldStr = new char[oldSize + 1];
 	newStr = new char[newSize + 1];
@@ -2088,7 +2085,7 @@ static int PatchText(int oldSize)
 	good = false;
 
 	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++)
+	for (int i = 0; i < NUMSPRITES; i++)
 	{
 		if (!strcmp(sprnames[i], oldStr))
 		{
@@ -2112,7 +2109,7 @@ static int PatchText(int oldSize)
 
 	    for (size_t i = 0; i < levels.size(); i++)
 	    {
-	        level_pwad_info_t& level = levels.at(0);
+	        level_info_t& level = levels.at(0);
 	        if (stricmp(level.music, musname) == 0)
 	        {
 	            good = true;

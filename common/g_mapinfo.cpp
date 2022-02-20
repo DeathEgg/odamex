@@ -278,7 +278,7 @@ int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL
 	return !strcmp(mapname.c_str(), lumpname);
 }
 
-int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
+int ParseStandardUmapInfoProperty(OScanner& os, level_info_t* mape)
 {
 	// find the next line with content.
 	// this line is no property.
@@ -496,7 +496,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	return 1;
 }
 
-void MapNameToLevelNum(level_pwad_info_t& info)
+void MapNameToLevelNum(level_info_t& info)
 {
 	if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
 	{
@@ -550,7 +550,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		}
 
 		// Find the level.
-		level_pwad_info_t& info = (levels.findByName(mapname).exists())
+		level_info_t& info = (levels.findByName(mapname).exists())
 		                              ? levels.findByName(mapname)
 		                              : levels.create();
 
@@ -1180,13 +1180,13 @@ struct MapInfoDataSetter
 #define ENTRY5(x1, x2, x3, x4, x5) \
 	mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4, x5));
 
-// level_pwad_info_t
+// level_info_t
 template <>
-struct MapInfoDataSetter<level_pwad_info_t>
+struct MapInfoDataSetter<level_info_t>
 {
 	MapInfoDataContainer mapInfoDataContainer;
 
-	MapInfoDataSetter(level_pwad_info_t& ref)
+	MapInfoDataSetter(level_info_t& ref)
 	{
 		mapInfoDataContainer.reserve(
 		    70); // [DE] some random number, i'm not counting all these
@@ -1545,7 +1545,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
 
-	level_pwad_info_t defaultinfo;
+	level_info_t defaultinfo;
 
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
@@ -1560,10 +1560,10 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	{
 		if (os.compareTokenNoCase("defaultmap"))
 		{
-			defaultinfo = level_pwad_info_t();
+			defaultinfo = level_info_t();
 
-			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
-			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+			MapInfoDataSetter<level_info_t> defaultsetter(defaultinfo);
+			ParseMapInfoLower<level_info_t>(os, defaultsetter);
 		}
 		else if (os.compareTokenNoCase("map"))
 		{
@@ -1588,7 +1588,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			}
 
 			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(map_name).exists())
+			level_info_t& info = (levels.findByName(map_name).exists())
 			                              ? levels.findByName(map_name)
 			                              : levels.create();
 
@@ -1612,8 +1612,8 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				info.level_name = os.getToken();
 			}
 
-			MapInfoDataSetter<level_pwad_info_t> setter(info);
-			ParseMapInfoLower<level_pwad_info_t>(os, setter);
+			MapInfoDataSetter<level_info_t> setter(info);
+			ParseMapInfoLower<level_info_t>(os, setter);
 
 			// If the level info was parsed and no levelnum was applied,
 			// try and synthesize one from the level name.

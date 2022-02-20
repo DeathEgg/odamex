@@ -85,37 +85,6 @@ struct acsdefered_s;
 class FBehavior;
 struct bossaction_t;
 
-struct level_info_t
-{
-	OLumpName		mapname;
-	int				levelnum;
-	std::string		level_name;
-	byte			level_fingerprint[16];
-	OLumpName		pname;
-	OLumpName		nextmap;
-	OLumpName		secretmap;
-	int				partime;
-	OLumpName		skypic;
-	OLumpName		music;
-	uint32_t		flags;
-	int				cluster;
-	FLZOMemFile*	snapshot;
-	acsdefered_s*	defered;
-
-	level_info_t()
-	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
-	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
-	      defered(NULL)
-	{
-		ArrayInit(level_fingerprint, 0);
-	}
-
-	bool exists() const
-	{
-		return !this->mapname.empty();
-	}
-};
-
 // struct that contains a FarmHash 128-bit fingerprint.
 struct fhfprint_s
 {
@@ -131,7 +100,7 @@ struct fhfprint_s
 	}
 };
 
-struct level_pwad_info_t
+struct level_info_t
 {
 	// level_info_t
 	OLumpName		mapname;
@@ -149,7 +118,7 @@ struct level_pwad_info_t
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
 
-	// level_pwad_info_t
+	// level_info_t
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct
 	// can consist of only plain-old-data types. It is also important to have
@@ -176,7 +145,7 @@ struct level_pwad_info_t
 	
 	std::vector<bossaction_t> bossactions;
 	
-	level_pwad_info_t()
+	level_info_t()
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
@@ -189,23 +158,7 @@ struct level_pwad_info_t
 		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
 	}
 
-	level_pwad_info_t(const level_info_t& other)
-	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
-	      pname(other.pname), nextmap(other.nextmap),
-		  secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
-		  music(other.music), flags(other.flags), cluster(other.cluster),
-		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
-		  skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
-		  endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
-		  bossactions()
-	{
-		ArrayInit(fadeto_color, 0);
-		ArrayInit(outsidefog_color, 0);
-		ArrayInit(level_fingerprint, 0);
-		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
-	}
-
-	level_pwad_info_t& operator=(const level_pwad_info_t& other)
+	level_info_t& operator=(const level_info_t& other)
 	{
 		if (this == &other)
 			return *this;
@@ -296,6 +249,8 @@ struct level_locals_t
 	fixed_t			aircontrol;
 	fixed_t			airfriction;
 
+	std::vector<std::string>	music_map;
+
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
@@ -356,21 +311,21 @@ extern level_locals_t level;
 
 class LevelInfos
 {
-	typedef std::vector<level_pwad_info_t> _LevelInfoArray;
+	typedef std::vector<level_info_t> _LevelInfoArray;
 	const level_info_t* m_defaultInfos;
-	std::vector<level_pwad_info_t> m_infos;
+	std::vector<level_info_t> m_infos;
 public:
 	LevelInfos(const level_info_t* levels);
 	~LevelInfos();
 	void addDefaults();
-	level_pwad_info_t& at(size_t i);
-	level_pwad_info_t& create();
+	level_info_t& at(size_t i);
+	level_info_t& create();
 	void clear();
 	void clearSnapshots();
-	level_pwad_info_t& findByName(const char* mapname);
-	level_pwad_info_t& findByName(const std::string& mapname);
-	level_pwad_info_t& findByName(const OLumpName& mapname);
-	level_pwad_info_t& findByNum(int levelnum);
+	level_info_t& findByName(const char* mapname);
+	level_info_t& findByName(const std::string& mapname);
+	level_info_t& findByName(const OLumpName& mapname);
+	level_info_t& findByNum(int levelnum);
 	size_t size();
 	void zapDeferreds();
 };

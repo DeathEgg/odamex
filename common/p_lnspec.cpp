@@ -1578,7 +1578,7 @@ FUNC(LS_Teleport_NewMap)
 	if (!TeleportSide)
 	{
 		LevelInfos& levels = getLevelInfos();
-		level_pwad_info_t info = levels.findByNum(arg0);
+		level_info_t info = levels.findByNum(arg0);
 
 		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
 		{
@@ -1907,7 +1907,7 @@ FUNC(LS_ACS_Execute)
 		return false;
 
 	LevelInfos& levels = getLevelInfos();
-	level_pwad_info_t& info = levels.findByNum(arg1);
+	level_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
 		return P_StartScript(it, ln, arg0, ::level.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 0);
@@ -1922,7 +1922,7 @@ FUNC(LS_ACS_ExecuteAlways)
 		return false;
 
 	LevelInfos& levels = getLevelInfos();
-	level_pwad_info_t& info = levels.findByNum(arg1);
+	level_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
 		return P_StartScript(it, ln, arg0, ::level.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 1);
@@ -1949,7 +1949,7 @@ FUNC(LS_ACS_Suspend)
 		return false;
 
 	LevelInfos& levels = getLevelInfos();
-	level_pwad_info_t& info = levels.findByNum(arg1);
+	level_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
 		P_SuspendScript(arg0, ::level.mapname.c_str());
@@ -1965,7 +1965,7 @@ FUNC(LS_ACS_Terminate)
 	if (!serverside)
 		return false;
 
-	level_pwad_info_t& info = getLevelInfos().findByNum(arg1);
+	level_info_t& info = getLevelInfos().findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
 		P_TerminateScript(arg0, ::level.mapname.c_str());

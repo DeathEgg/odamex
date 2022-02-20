@@ -48,7 +48,7 @@
 
 level_locals_t level;			// info about current level
 
-level_pwad_info_t g_EmptyLevel;
+level_info_t g_EmptyLevel;
 cluster_info_t g_EmptyCluster;
 
 EXTERN_CVAR(co_allowdropoff)
@@ -81,13 +81,13 @@ void LevelInfos::addDefaults()
 			break;
 
 		// Copied, so it can be mutated.
-		level_pwad_info_t info(level);
+		level_info_t info(level);
 		m_infos.push_back(info);
 	}
 }
 
 // Get a specific info index
-level_pwad_info_t& LevelInfos::at(size_t i)
+level_info_t& LevelInfos::at(size_t i)
 {
 	return m_infos.at(i);
 }
@@ -114,14 +114,14 @@ void LevelInfos::clearSnapshots()
 }
 
 // Add a new levelinfo and return it by reference
-level_pwad_info_t& LevelInfos::create()
+level_info_t& LevelInfos::create()
 {
-	m_infos.push_back(level_pwad_info_t());
+	m_infos.push_back(level_info_t());
 	return m_infos.back();
 }
 
 // Find a levelinfo by mapname
-level_pwad_info_t& LevelInfos::findByName(const char* mapname)
+level_info_t& LevelInfos::findByName(const char* mapname)
 {
 	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
@@ -133,7 +133,7 @@ level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 	return ::g_EmptyLevel;
 }
 
-level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
+level_info_t& LevelInfos::findByName(const std::string &mapname)
 {
 	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
@@ -145,7 +145,7 @@ level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 	return ::g_EmptyLevel;
 }
 
-level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
+level_info_t& LevelInfos::findByName(const OLumpName& mapname)
 {
 	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
@@ -158,7 +158,7 @@ level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
 }
 
 // Find a levelinfo by mapnum
-level_pwad_info_t& LevelInfos::findByNum(int levelnum)
+level_info_t& LevelInfos::findByNum(int levelnum)
 {
 	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
@@ -297,7 +297,7 @@ void G_ParseMusInfo()
 		while (os.scan())
 		{
 			const std::string map_name = os.getToken();
-			level_pwad_info_t& map = levels.findByName(map_name);
+			level_info_t& map = levels.findByName(map_name);
 
 			if (!map.exists())
 			{
@@ -692,7 +692,7 @@ void G_ClearSnapshots()
 	getLevelInfos().clearSnapshots();
 }
 
-static void writeSnapShot(FArchive &arc, level_pwad_info_t& info)
+static void writeSnapShot(FArchive &arc, level_info_t& info)
 {
 	arc.Write(info.mapname.c_str(), 8);
 	info.snapshot->Serialize(arc);
@@ -706,7 +706,7 @@ void G_SerializeSnapshots(FArchive &arc)
 	{
 		for (size_t i = 0; i < levels.size(); i++)
 		{
-			level_pwad_info_t& level = levels.at(i);
+			level_info_t& level = levels.at(i);
 			if (level.snapshot)
 			{
 				writeSnapShot(arc, level);
@@ -729,7 +729,7 @@ void G_SerializeSnapshots(FArchive &arc)
 			arc.Read(&mapname[1], 7);
 
 			// FIXME: We should really serialize the full levelinfo
-			level_pwad_info_t& info = levels.findByName(mapname);
+			level_info_t& info = levels.findByName(mapname);
 			info.snapshot = new FLZOMemFile;
 			info.snapshot->Serialize(arc);
 			arc >> mapname[0];
@@ -737,7 +737,7 @@ void G_SerializeSnapshots(FArchive &arc)
 	}
 }
 
-static void writeDefereds(FArchive &arc, level_pwad_info_t& info)
+static void writeDefereds(FArchive &arc, level_info_t& info)
 {
 	arc.Write(info.mapname.c_str(), 8);
 	arc << info.defered;
@@ -751,7 +751,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 	{
 		for (size_t i = 0; i < levels.size(); i++)
 		{
-			level_pwad_info_t& level = levels.at(i);
+			level_info_t& level = levels.at(i);
 			if (level.defered)
 			{
 				writeDefereds(arc, level);
@@ -772,7 +772,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 		while (mapname[0])
 		{
 			arc.Read(&mapname[1], 7);
-			level_pwad_info_t& info = levels.findByName(mapname);
+			level_info_t& info = levels.findByName(mapname);
 			if (!info.exists())
 			{
 				char name[9];
@@ -833,11 +833,11 @@ void G_InitLevelLocals()
 	memset(level.vars, 0, sizeof(level.vars));
 
 	// Get our canonical level data.
-	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname);
+	level_info_t& info = getLevelInfos().findByName(::level.mapname);
 
 	// [ML] 5/11/06 - Remove sky scrolling and sky2
 	// [SL] 2012-03-19 - Add sky2 back
-	::level.info = (level_info_t*)&info;
+	::level.info = &info;
 	::level.skypic2 = info.skypic2;
 	memcpy(::level.fadeto_color, info.fadeto_color, 4);
 	
@@ -1003,7 +1003,7 @@ BEGIN_COMMAND(mapinfo)
 		return;
 	}
 
-	level_pwad_info_t* infoptr = NULL;
+	level_info_t* infoptr = NULL;
 	if (stricmp(argv[1], "mapname") == 0)
 	{
 		infoptr = &levels.findByName(argv[2]);
@@ -1040,7 +1040,7 @@ BEGIN_COMMAND(mapinfo)
 		return;
 	}
 
-	level_pwad_info_t& info = *infoptr;
+	level_info_t& info = *infoptr;
 
 	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname.c_str());
 	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);

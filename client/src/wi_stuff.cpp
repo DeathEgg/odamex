@@ -1267,7 +1267,7 @@ void WI_updateStats()
     {
 		if (acceleratestage)
 		{
-			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
+			level_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
 			OLumpName name = nextlevel.enterpic;
 
 			if (nextlevel.enterpic[0])
@@ -1456,7 +1456,7 @@ static int WI_CalcWidth (const char *str)
 void WI_loadData()
 {
 	LevelInfos& levels = getLevelInfos();
-	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
+	level_info_t& currentlevel = levels.findByName(wbs->current);
 
 	char name[17];
 

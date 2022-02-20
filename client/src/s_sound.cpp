@@ -1329,7 +1329,7 @@ void S_ParseSndInfo (void)
 					// Hexen-style $MAP command
 					sndinfo = COM_Parse (sndinfo);
 					sprintf (com_token, "MAP%02d", atoi (com_token));
-					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
+					level_info_t& info = getLevelInfos().findByName(com_token);
 					sndinfo = COM_Parse (sndinfo);
 					if (info.mapname[0])
 					{
