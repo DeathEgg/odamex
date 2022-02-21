@@ -1060,9 +1060,8 @@ void S_StartMusic (const char *m_id)
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic (std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, bool looping)
 {
-	
 	// [SL] Avoid caching music lumps if we're not playing music
 	if (snd_musicsystem == MS_NONE)
 		return;
@@ -1073,7 +1072,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 	if (!musicname.length() || musicname[0] == 0)
 	{
 		// Don't choke if the map doesn't have a song attached
-		S_StopMusic ();
+		S_StopMusic();
 		return;
 	}
 
@@ -1081,7 +1080,6 @@ void S_ChangeMusic (std::string musicname, int looping)
 	size_t length = 0;
 	int lumpnum;
 	FILE *f;
-
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
@@ -1093,7 +1091,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		length = W_LumpLength(lumpnum);
-		I_PlaySong(data, length, (looping != 0));
+		I_PlaySong(data, length, looping);
     }
     else
 	{
@@ -1104,7 +1102,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 		fclose(f);
 
 		if (result == 1)
-			I_PlaySong(data, length, (looping != 0));
+			I_PlaySong(data, length, looping);
 		M_Free(data);
 	}
 

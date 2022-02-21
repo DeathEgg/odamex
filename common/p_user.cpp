@@ -674,10 +674,9 @@ void P_MovePlayer (player_t *player)
 // [RH] (Adapted from Q2)
 // P_FallingDamage
 //
-void P_FallingDamage (AActor *ent)
+void P_FallingDamage(AActor *ent)
 {
 	float	delta;
-	int		damage;
 
 	if (!ent->player)
 		return;		// not a player
@@ -690,13 +689,13 @@ void P_FallingDamage (AActor *ent)
 		&& (!(ent->flags2 & MF2_ONMOBJ)
 			|| !(ent->z <= ent->floorz)))
 	{
-		delta = (float)ent->player->oldvelocity[2];
+		delta = static_cast<float>(ent->player->oldvelocity[2]);
 	}
 	else
 	{
 		if (!(ent->flags2 & MF2_ONMOBJ))
 			return;
-		delta = (float)(ent->momz - ent->player->oldvelocity[2]);
+		delta = static_cast<float>(ent->momz - ent->player->oldvelocity[2]);
 	}
 	delta = delta*delta * 2.03904313e-11f;
 
@@ -711,7 +710,7 @@ void P_FallingDamage (AActor *ent)
 
 	if (delta > 30)
 	{
-		damage = (int)((delta-30)/2);
+		int damage = static_cast<int>((delta - 30) / 2);
 		if (damage < 1)
 			damage = 1;
 
@@ -722,6 +721,38 @@ void P_FallingDamage (AActor *ent)
 	{
 		//ent->s.event = EV_FALLSHORT;
 		return;
+	}
+}
+
+//
+// Check if the music has changed or not
+//
+void P_CheckMusicChange(player_t* player)
+{
+	// MUSINFO stuff
+	if (player->MUSINFOtics >= 0 && player->MUSINFOactor != NULL)
+	{
+		if (--player->MUSINFOtics < 0)
+		{
+			if (player == &consoleplayer())
+			{
+				if (player->MUSINFOactor->args[0] != 0)
+				{
+					const std::string music = level.music_map[player->MUSINFOactor->args[0]];
+
+					if (!music.empty())
+					{
+						S_ChangeMusic(music.c_str(), player->MUSINFOactor->args[1]);
+					}
+				}
+				else
+				{
+					S_ChangeMusic("*", true);
+				}
+			}
+			Printf(PRINT_HIGH, "MUSINFO change for player %d to %d\n",
+			        player->id, player->MUSINFOactor->args[0]);
+		}
 	}
 }
 

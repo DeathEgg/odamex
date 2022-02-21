@@ -319,7 +319,7 @@ void G_ParseMusInfo()
 					const std::string music = os.getToken();
 					if (map.exists())
 					{
-						//map->MusicMap[index] = music;
+						map.music_map[index] = music;
 					}
 				}
 			}

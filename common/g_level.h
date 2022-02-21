@@ -133,6 +133,9 @@ struct level_info_t
 	float			gravity;
 	float			aircontrol;
 
+	// MUSINFO
+	std::map<int, std::string>	music_map;
+
 	// The following are necessary for UMAPINFO compatibility
 	OLumpName		exitpic;
 	OLumpName		enterpic;
@@ -183,6 +186,7 @@ struct level_info_t
 		skypic2 = other.skypic2;
 		gravity = other.gravity;
 		aircontrol = other.aircontrol;
+		music_map = other.music_map;
 		exitpic = other.exitpic;
 		enterpic = other.enterpic;
 		endpic = other.endpic;
@@ -249,7 +253,8 @@ struct level_locals_t
 	fixed_t			aircontrol;
 	fixed_t			airfriction;
 
-	std::vector<std::string>	music_map;
+	// MUSINFO
+	std::map<int, std::string>	music_map;
 
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
@@ -267,7 +272,7 @@ struct level_locals_t
 	
 	std::vector<bossaction_t> bossactions;
 	
-	// The following is used for automatic gametype detection.
+	// The following is used for automatic gametype detect{}ion.
 	float			detected_gametype;
 };
 
