@@ -1340,6 +1340,8 @@ player_s::player_s() :
 	suicidedelay(0),
 	camera(AActor::AActorPtr()),
 	air_finished(0),
+	MUSINFOactor(AActor::AActorPtr()),
+	MUSINFOtics(0),
 	GameTime(0),
 	JoinTime(time_t()),
 	ping(0),
@@ -1386,8 +1388,6 @@ player_s::player_s() :
 
 player_s &player_s::operator =(const player_s &other)
 {
-	size_t i;
-
 	id = other.id;
 	playerstate = other.playerstate;
 	mo = other.mo;
@@ -1456,6 +1456,9 @@ player_s &player_s::operator =(const player_s &other)
 
 	camera = other.camera;
 	air_finished = other.air_finished;
+
+	MUSINFOactor = other.MUSINFOactor;
+	MUSINFOtics = other.MUSINFOtics;
 
 	GameTime = other.GameTime;
 	JoinTime = other.JoinTime;

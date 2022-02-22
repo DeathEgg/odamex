@@ -134,7 +134,7 @@ public:
 
 	AActor::AActorPtr	mo;
 
-	struct ticcmd_t cmd;	// the ticcmd currently being processed
+	ticcmd_t cmd;	// the ticcmd currently being processed
 	std::queue<NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
@@ -229,7 +229,7 @@ public:
 	int			air_finished;			// [RH] Time when you start drowning
 
 	AActor::AActorPtr MUSINFOactor;		// For MUSINFO purposes
-	int8_t		MUSINFOtics = 0;
+	int8_t		MUSINFOtics;
 
 	int			GameTime;				// [Dash|RD] Length of time that this client has been in the game.
 	time_t		JoinTime;				// [Dash|RD] Time this client joined.

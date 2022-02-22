@@ -117,6 +117,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	player.viewheight = VIEWHEIGHT;
 	player.xviewshift = 0;
 	player.attacker = AActor::AActorPtr();
+	player.MUSINFOactor = AActor::AActorPtr();
+	player.MUSINFOtics = -1;
 
 	consoleplayer().camera = displayplayer().mo;
 
