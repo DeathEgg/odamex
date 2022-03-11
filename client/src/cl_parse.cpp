@@ -150,7 +150,7 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo, bossaction);
+			P_CrossSpecialLine(line, side, mo, bossaction);
 		break;
 	case LineUse:
 		if (line)
@@ -1156,8 +1156,12 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		else 
 			p->health = 0;
 	}
+
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
+
+	if (p->armorpoints == 0)
+		p->armortype = 0;
 
 	if (healthDamage > 0)
 	{

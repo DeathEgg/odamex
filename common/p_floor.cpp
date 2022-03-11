@@ -31,7 +31,7 @@
 #include "tables.h"
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
-void P_ResetSectorTransferFlags(unsigned int* flags);
+const unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
 
 EXTERN_CVAR(co_boomphys)
 
@@ -455,8 +455,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = found->flags;
-					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_NewFlags = P_ResetSectorTransferFlags(found->flags);
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
@@ -487,8 +486,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 				m_NewDamageRate = ns.damageamount;
 				m_NewDmgInterval = ns.damageinterval;
 				m_NewLeakRate = ns.damageleakrate;
-				m_NewFlags = line->frontsector->flags;
-				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
 				m_Type = DFloor::genFloorChg0;
 				break;
 			case 2:
@@ -521,6 +519,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	m_ResetCount = 0; // [RH]
 	m_Sector = sec;
 	m_OrgHeight = floorheight;
+	m_Height = floorheight;
 	m_Line = line;
 	m_Direction = direction ? 1 : -1;
 	m_NewSpecial = sec->special;
@@ -528,6 +527,11 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	m_NewDmgInterval = sec->damageinterval;
 	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
+
+	if (m_Direction == 1)
+		m_Status = up;
+	else if (m_Direction == -1)
+		m_Status = down;
 
 	PlayFloorSound();
 
@@ -560,7 +564,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 		break;
 	case FtoNnF:
 		m_FloorDestHeight =
-		    m_Direction ? P_FindNextHighestFloor(sec) : P_FindNextLowestFloor(sec);
+		    direction ? P_FindNextHighestFloor(sec) : P_FindNextLowestFloor(sec);
 		break;
 	case FtoLnC:
 		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
@@ -594,21 +598,21 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	{
 		if (model) // if a numeric model change
 		{
-			sector_t* sec;
+			sector_t* chgsec = NULL;
 
 			// jff 5/23/98 find model with ceiling at target height if target
 			// is a ceiling type
-			sec = (target == FtoLnC || target == FtoC)
+			chgsec = (target == FtoLnC || target == FtoC)
 			          ? P_FindModelCeilingSector(m_FloorDestHeight, sec)
 			          : P_FindModelFloorSector(m_FloorDestHeight, sec);
-			if (sec)
+			if (chgsec)
 			{
-				m_Texture = sec->floorpic;
-				m_NewSpecial = sec->special;
-				m_NewDamageRate = sec->damageamount;
-				m_NewDmgInterval = sec->damageinterval;
-				m_NewLeakRate = sec->leakrate;
-				m_NewFlags = sec->flags;
+				m_Texture = chgsec->floorpic;
+				m_NewSpecial = chgsec->special;
+				m_NewDamageRate = chgsec->damageamount;
+				m_NewDmgInterval = chgsec->damageinterval;
+				m_NewLeakRate = chgsec->leakrate;
+				m_NewFlags = chgsec->flags;
 				switch (change)
 				{
 				case FChgZero: // zero type
@@ -618,16 +622,15 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = sec->flags;
-					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_NewFlags = P_ResetSectorTransferFlags(chgsec->flags);
 					m_Type = genFloorChg0;
 					break;
 				case FChgTyp: // copy type
-					m_NewSpecial = sec->special;
-					m_NewDamageRate = sec->damageamount;
-					m_NewDmgInterval = sec->damageinterval;
-					m_NewLeakRate = sec->leakrate;
-					m_NewFlags = sec->flags;
+					m_NewSpecial = chgsec->special;
+					m_NewDamageRate = chgsec->damageamount;
+					m_NewDmgInterval = chgsec->damageinterval;
+					m_NewLeakRate = chgsec->leakrate;
+					m_NewFlags = chgsec->flags;
 					m_Type = genFloorChgT;
 					break;
 				case FChgTxt: // leave type be
@@ -655,8 +658,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 				m_NewDamageRate = ns.damageamount;
 				m_NewDmgInterval = ns.damageinterval;
 				m_NewLeakRate = ns.damageleakrate;
-				m_NewFlags = line->frontsector->flags;
-				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
 				m_Type = genFloorChg0;
 				break;
 			case FChgTyp: // copy type
@@ -1018,6 +1020,7 @@ BOOL EV_DoGenFloor(line_t* line)
 		if (manual)
 			return rtn;
 	}
+	return rtn;
 }
 
 BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
@@ -1028,7 +1031,6 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 	sector_t* sec;
 	bool manual = false;
 
-	speed *= FRACUNIT / 8;
 	height *= FRACUNIT;
 
 	// check if a manual trigger; if so do just the sector on the backside
@@ -1532,23 +1534,18 @@ int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
 
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
-	int secnum = -1;
 	int rtn = 0;
 
-	while ((secnum = P_FindSectorFromTagOrLine(tag, line, secnum)) >= 0)
-		rtn |= P_SpawnDonut(secnum, line, pillarspeed, slimespeed);
+	rtn = P_SpawnDonut(line->id, line, pillarspeed, slimespeed);
 
 	return rtn;
 }
 
 int EV_DoDonut(line_t* line)
 {
-	int secnum = -1;
 	int rtn = 0;
 
-	// do function on all sectors with same tag as linedef
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-		rtn |= P_SpawnDonut(secnum, line, FLOORSPEED / 2, FLOORSPEED / 2);
+	rtn = P_SpawnDonut(line->id, line, FLOORSPEED / 2, FLOORSPEED / 2);
 
 	return rtn;
 }
@@ -1728,6 +1725,7 @@ void DElevator::RunThink ()
 
 	if (res == pastdest)	// if destination height acheived
 	{
+		m_Status = finished;
 		// make floor stop sound
 		PlayElevatorSound();
 
@@ -1819,6 +1817,7 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 
 		elevator->m_Type = type;
 		elevator->m_Speed = speed;
+		elevator->m_Status = DElevator::init;
 		elevator->PlayElevatorSound();
 
 		sec->floordata = sec->ceilingdata = elevator;
@@ -1865,6 +1864,8 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 			break;
 		}
 	}
+
+	return rtn;
 }
 
 // Almost identical to the above, but height is multiplied by FRACUNIT

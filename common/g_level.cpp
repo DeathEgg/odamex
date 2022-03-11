@@ -851,7 +851,13 @@ void G_InitLevelLocals()
 				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
-		}		
+		}
+		else
+		{
+			begin = info.level_name;
+		}
+
+
 		if (!begin.empty())
 		{
 			std::string level_name(begin);
@@ -914,7 +920,6 @@ void G_InitLevelLocals()
 	::level.intermusic = info.intermusic;
 	
 	::level.bossactions = info.bossactions;
-	::level.bossactions_donothing = info.bossactions_donothing;
 	
 	::level.detected_gametype = GM_COOP;
 

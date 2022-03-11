@@ -665,6 +665,19 @@ static const identData_t identdata[] = {
     },
 
     // ------------------------------------------------------------------------
+    // REKKRSA.WAD
+    // ------------------------------------------------------------------------
+    {
+        "REKKR v1.16a",                     // mIdName
+        "REKKRSA.WAD",                      // mFilename
+        "0D294CA5",                         // mCRC32Sum
+        "B6F4BB3A80F096B6045CFAEB57D4CF29", // mMd5Sum
+        "REKKR",                            // mGroupName
+        IDENT_IWAD,                         // flags
+        600,                                // weight
+    },
+
+    // ------------------------------------------------------------------------
     // HERETIC.WAD
     // ------------------------------------------------------------------------
     {
@@ -715,7 +728,7 @@ static const identData_t identdata[] = {
         HERETICSW_PREFIX " v1.0",           // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
         1450,                               // weight
-    }
+    },
 };
 
 
@@ -1110,7 +1123,13 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 
 	const OString idname = identtab.identify(iwad);
 
-	if (idname.find("HACX") == 0)
+	if (idname.find("REKKR") == 0)
+    {
+		gamemode = retail;
+		gameinfo = RetailGameInfo;
+		gamemission = doom;
+	}
+	else if (idname.find("HACX") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;

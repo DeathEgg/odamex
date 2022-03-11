@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __GI_H__
-#define __GI_H__
+#pragma once
 
 #include "olumpname.h"
 #include "st_stuff.h"
@@ -93,6 +92,3 @@ typedef struct
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;
-
-#endif //__GI_H__
-

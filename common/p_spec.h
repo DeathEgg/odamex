@@ -24,9 +24,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_SPEC__
-#define __P_SPEC__
+#pragma once
 
 #include <list>
 #include "dsectoreffect.h"
@@ -330,7 +328,7 @@ void	P_SpawnZDoomSectorSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor* thing, bool bossaction);
+void    P_CrossSpecialLine (line_t* line, int side, AActor* thing, bool bossaction);
 void    P_ShootSpecialLine (AActor* thing, line_t* line);
 bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
@@ -1285,5 +1283,3 @@ BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad
 
 // [AM] Trigger actor specials.
 bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType);
-
-#endif

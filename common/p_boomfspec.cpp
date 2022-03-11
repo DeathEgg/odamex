@@ -67,7 +67,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	    }
 	}
 	*/
-	if (!thing->player && !bossaction)
+	if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 	{
 		// Things that should NOT trigger specials...
 		switch (thing->type)
@@ -100,7 +100,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenFloorBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if ((line->special & FloorChange) || !(line->special & FloorModel))
 					return result; // FloorModel is "Allow Monsters" if FloorChange is 0
 			/*
@@ -112,7 +112,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenCeilingBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 					return result; // CeilingModel is "Allow Monsters" if CeilingChange is
 					               // 0
@@ -125,7 +125,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenDoorBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			{
 				if (!(line->special & DoorMonster))
 					return result;           // monsters disallowed from this door
@@ -141,7 +141,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenLockedBase)
 		{
-			if (!thing->player || bossaction) // boss actions can't handle locked doors
+			if ((!thing->player && thing->type != MT_AVATAR) ||
+			    bossaction)    // boss actions can't handle locked doors
 				return result;                // monsters disallowed from unlocking doors
 			if (((line->special & TriggerType) == WalkOnce) ||
 			    ((line->special & TriggerType) == WalkMany))
@@ -155,7 +156,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenLiftBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & LiftMonster))
 					return result; // monsters disallowed
 			/*
@@ -167,7 +168,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenStairsBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & StairMonster))
 					return result; // monsters disallowed
 			/*
@@ -181,7 +182,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			// haleyjd 06/09/09: This was completely forgotten in BOOM, disabling
 			// all generalized walk-over crusher types!
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & StairMonster))
 					return result; // monsters disallowed
 			/*
@@ -211,7 +212,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			}
 	}
 
-	if (!thing->player || bossaction)
+	if ((!thing->player && thing->type != MT_AVATAR) || bossaction)
 	{
 		ok = 0;
 		switch (line->special)
@@ -243,7 +244,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			ok = 1;
 			break;
 		}
-		if (!ok)
+		if (!ok && !bossaction) // Bossactions can use any linedef except teleports.
 			return result;
 	}
 
@@ -252,6 +253,15 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	// Dispatch on the line special value to the line's action routine
 	// If a once only function, and successful, clear the line special
+
+	// Do not teleport on the wrong side
+	if (side)
+	{
+		if (P_IsTeleportLine(line->special))
+		{
+			return result;
+		}
+	}
 
 	switch (line->special)
 	{
@@ -262,7 +272,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -271,7 +281,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -281,7 +291,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(VDOORWAIT), NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -291,7 +301,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0, 0, 0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -301,7 +311,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_NORMAL), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -312,7 +322,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                   TICS(0), 0, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -325,7 +335,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -333,14 +343,14 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Light Turn On - brightest near
 		EV_LightTurnOn(line->id, -1);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 13:
 		// Light Turn On 255
 		EV_LightTurnOn(line->id, 255);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 16:
@@ -349,7 +359,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              OCTICS(240), NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -357,7 +367,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Start Light Strobing
 		EV_StartLightStrobing(line->id, TICS(5), TICS(35));
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 19:
@@ -366,7 +376,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               (128 - 128) * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -376,7 +386,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              1))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -386,7 +396,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -397,7 +407,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -405,7 +415,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Lights Very Dark
 		EV_LightTurnOn(line->id, 35);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 36:
@@ -414,7 +424,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               (136 - 128) * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -424,7 +434,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0 * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -434,7 +444,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -443,8 +453,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_LineTeleport(line, side, thing))
 		{
 			result.lineexecuted = true;
-			// line->special = 0; // [Blair] Don't clear the line special,
-								  // we have other functions that handle that for teleports.
+			//line->special = 0;
 		}						
 		break;
 
@@ -455,7 +464,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
 		           false); // jff 02/12/98 doesn't work
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 44:
@@ -464,7 +473,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -485,7 +494,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -493,7 +502,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Platform Stop
 		EV_StopPlat(line->id);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 56:
@@ -502,7 +511,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -511,7 +520,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_CeilingCrushStop(line->id))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -521,7 +530,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               FRACUNIT * 24, 0, 0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -531,7 +540,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               24 * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -559,7 +568,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Turn lights off in sector(tag)
 		EV_TurnTagLightsOff(line->id);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 108:
@@ -568,7 +577,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(VDOORWAIT), NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -577,7 +586,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -586,7 +595,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -596,7 +605,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -606,7 +615,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -624,7 +633,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 125:
 		// TELEPORT MonsterONLY
-		if (!thing->player && (EV_LineTeleport(line, side, thing)))
+		if (!thing->player && thing->type != MT_AVATAR &&
+		    (EV_LineTeleport(line, side, thing)))
 		{
 			result.lineexecuted = true;
 			//line->special = 0;
@@ -637,7 +647,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0, false))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -647,7 +657,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_SLOW), 0, true, 1, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -880,7 +890,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 126:
 		// TELEPORT MonsterONLY.
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			EV_LineTeleport(line, side, thing);
 			result.lineexecuted = true;
@@ -923,7 +933,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			               FRACUNIT * 64 * 8, 0, 0, false))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -934,7 +944,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			              SPEED(P_SLOW / 2), 0, 0, 2))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -945,7 +955,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			              SPEED(P_SLOW / 2), 0, 0, 2))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -956,7 +966,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -966,7 +976,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoDonut(line))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -977,7 +987,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 0, 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -988,7 +998,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1008,7 +1018,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1018,7 +1028,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1029,7 +1039,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			               0, 0, false))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1040,7 +1050,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1051,7 +1061,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1062,47 +1072,47 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
 		case 243: // jff 3/6/98 make fit within DCK's 256 linedef types
 			// killough 2/16/98: W1 silent teleporter (linedef-linedef kind)
-			if (EV_SilentLineTeleport(line, side, thing, line->id, false))
+			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
 		case 262: // jff 4/14/98 add silent line-line reversed
-			if (EV_SilentLineTeleport(line, side, thing, line->id, true))
+			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
 		case 264: // jff 4/14/98 add monster-only silent line-line reversed
-			if (!thing->player &&
+			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
 		case 266: // jff 4/14/98 add monster-only silent line-line
-			if (!thing->player &&
+			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
 		case 268: // jff 4/14/98 add monster-only silent
-			if (!thing->player &&
+			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
@@ -1284,17 +1294,23 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 244: // jff 3/6/98 make fit within DCK's 256 linedef types
 			// killough 2/16/98: WR silent teleporter (linedef-linedef kind)
-			EV_SilentLineTeleport(line, side, thing, line->id, false);
-			result.lineexecuted = true;
+			if (thing)
+			{
+				EV_SilentLineTeleport(line, side, thing, line->id, false);
+				result.lineexecuted = true;
+			}
 			break;
 
 		case 263: // jff 4/14/98 add silent line-line reversed
-			EV_SilentLineTeleport(line, side, thing, line->id, true);
-			result.lineexecuted = true;
+			if (thing)
+			{
+				EV_SilentLineTeleport(line, side, thing, line->id, true);
+				result.lineexecuted = true;
+			}
 			break;
 
 		case 265: // jff 4/14/98 add monster-only silent line-line reversed
-			if (!thing->player)
+			if (!thing->player && thing->type != MT_AVATAR)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, true);
 				result.lineexecuted = true;
@@ -1302,7 +1318,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 267: // jff 4/14/98 add monster-only silent line-line
-			if (!thing->player)
+			if (!thing->player && thing->type != MT_AVATAR)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, false);
 				result.lineexecuted = true;
@@ -1363,9 +1379,12 @@ void P_PlayerInCompatibleSector(player_t* player)
 		return;
 
 	sector_t* sector = player->mo->subsector->sector;
-
+	if (sector->special == 0 && sector->damageamount > 0) // Odamex Static Init Damage
+	{
+		P_ApplySectorDamage(player, sector->damageamount, 0);
+	}
 	// jff add if to handle old vs generalized types
-	if (sector->special < 32) // regular sector specials
+	else if (sector->special < 32) // regular sector specials
 	{
 		switch (sector->special)
 		{
@@ -1556,6 +1575,8 @@ void P_SpawnCompatibleExtra(int i)
 {
 	int s;
 	sector_t* sec;
+	float grav;
+	int damage;
 
 	switch (lines[i].special)
 	{
@@ -1597,6 +1618,24 @@ void P_SpawnCompatibleExtra(int i)
 		for (s = -1; (s = P_FindSectorFromTag(lines[i].id, s)) >= 0;)
 			sectors[s].sky = (i + 1) | PL_SKYFLAT;
 		break;
+
+	case OdamexStaticInits: // Gravity
+		grav =
+		    ((float)P_AproxDistance(lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
+		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
+			sectors[s].gravity = grav;
+		break;
+
+	case OdamexStaticInits + 2: // Damage
+		damage = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
+		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
+		{
+			sectors[s].damageamount = damage;
+			sectors[s].damageinterval = 32;
+			sectors[s].leakrate = 0;
+			sectors[s].mod = MOD_UNKNOWN;
+		}
+		break;
 	}
 }
 
@@ -1618,7 +1657,7 @@ void P_SpawnCompatibleSectorSpecial(sector_t* sector)
 	if (sector->special & PUSH_MASK)
 		sector->flags |= SECF_PUSH;
 
-	switch (sector->special)
+	switch (sector->special & 31)
 	{
 	case 1:
 		if (IgnoreSpecial)
@@ -1870,9 +1909,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// e6y
 	// b.m. side test was broken in boom201
-	if (demoplayback)
-		if (side) // jff 6/1/98 fix inadvertent deletion of side test
-			return result;
+	if (side) // jff 6/1/98 fix inadvertent deletion of side test
+		return result;
 
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 	
@@ -1887,7 +1925,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenFloorBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
 		if (!line->id &&
@@ -1897,7 +1935,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenCeilingBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return result; // CeilingModel is "Allow Monsters" if CeilingChange is
 					            // 0
@@ -1908,7 +1946,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 		{
 			if (!(line->special & DoorMonster))
 				return result;           // monsters disallowed from this door
@@ -1922,7 +1960,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
 	{
-		if (!thing->player || bossaction)
+		if ((!thing->player && thing->type != MT_AVATAR) || bossaction)
 			return result; // monsters disallowed from unlocking doors
 		if (!P_CanUnlockGenDoor(line, thing->player))
 			return result;
@@ -1934,7 +1972,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenLiftBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & LiftMonster))
 				return result; // monsters disallowed
 		if (!line->id &&
@@ -1944,7 +1982,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenStairsBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
 		if (!line->id &&
@@ -1954,7 +1992,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & CrusherMonster))
 				return result; // monsters disallowed
 		if (!line->id &&
@@ -2001,7 +2039,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		}
 
 	// Switches that other things can activate.
-	if (!thing->player && !bossaction)
+	if (thing && !thing->player && thing->type != MT_AVATAR && !bossaction)
 	{
 		// never open secret doors
 		if (line->flags & ML_SECRET)
@@ -2137,7 +2175,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
 			return result;
 		}
@@ -2270,7 +2308,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
 			return result;
 		}
@@ -3311,7 +3349,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenFloorBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
@@ -3321,7 +3359,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenCeilingBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return result; // CeilingModel is "Allow Monsters" if CeilingChange is 0
 		if (!line->id)        // jff 2/27/98 all gun generalized types require tag
@@ -3330,7 +3368,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			if (!(line->special & DoorMonster))
 				return result;           // monsters disallowed from this door
@@ -3343,7 +3381,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			return result; // monsters disallowed from unlocking doors
 		if (((line->special & TriggerType) == GunOnce) ||
 		    ((line->special & TriggerType) == GunMany))
@@ -3360,14 +3398,14 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenLiftBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & LiftMonster))
 				return result; // monsters disallowed
 		linefunc = EV_DoGenLift;
 	}
 	else if ((unsigned)line->special >= GenStairsBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
@@ -3376,7 +3414,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
@@ -3406,7 +3444,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		}
 
 	// Impacts that other things can activate.
-	if (!thing->player)
+	if (thing && !thing->player && thing->type != MT_AVATAR)
 	{
 		int ok = 0;
 		switch (line->special)
@@ -3463,7 +3501,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
@@ -3476,7 +3514,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
@@ -3492,7 +3530,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return result;
 }
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
 {
 	/*
 	if (mbf21)
@@ -3503,7 +3541,7 @@ const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
 
 	unsigned int filter;
 
-	if (demoplayback)
+	if (demoplayback || reserved)
 		filter = 0x01ff;
 	else
 		filter = 0x3fff;
@@ -3527,11 +3565,11 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line)
 							lines[j].tranlump = lump;
 #else
 	          // [RH] Second arg controls how opaque it is.
-		if (!line->args[0])
+		if (line->id == 0)
 			line->lucency = (byte)128;
 		else
 			for (j = 0; j < numlines; j++)
-				if (lines[j].id == line->args[0])
+				if (lines[j].id == line->id)
 					lines[j].lucency = (byte)128;
 #endif
 		line->special = 0;

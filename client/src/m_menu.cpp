@@ -48,6 +48,7 @@
 #include "cl_responderkeys.h"
 
 #include "gi.h"
+#include "g_skill.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -331,43 +332,27 @@ oldmenu_t ExpDef =
 //
 // NEW GAME
 //
-enum newgame_t
-{
-	killthings,
-	toorough,
-	hurtme,
-	violence,
-	nightmare,
-	pistolstart,
-	newg_end
-} newgame_e;
 
-oldmenuitem_t DoomNewGameMenu[]=
+oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 {
-    {1, "M_JKILL", M_ChooseSkill, 'i', false},
-	{1,"M_ROUGH",		M_ChooseSkill, 'h', false},
-    {1, "M_HURT", M_ChooseSkill, 'h', false},
-	{1,"M_ULTRA",		M_ChooseSkill, 'u', false},
-    {1, "M_NMARE", M_ChooseSkill, 'n', false},
-	{1,"\0",			M_ChooseSkill, 'p', false}
-};
-
-oldmenuitem_t HereticNewGameMenu[]=
-{
-    {1, "$MNU_WETNURSE",			M_ChooseSkill, 't', true},
-    {1, "$MNU_YELLOWBELLIES",	M_ChooseSkill, 'y', true},
-    {1, "$MNU_BRINGEST",			M_ChooseSkill, 'b', true},
-    {1, "$MNU_SMITE",			M_ChooseSkill, 'h', true},
-    {1, "$MNU_BLACKPLAGUE",		M_ChooseSkill, 'b', true}
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	//{1,"\0", M_ChooseSkill,0}
 };
 
 oldmenu_t NewDef =
 {
-	newg_end,			// # of menu items
-    DoomNewGameMenu,	// oldmenuitem_t ->
+	0,			// # of menu items
+	NewGameMenu,		// oldmenuitem_t ->
 	M_DrawNewGame,		// drawing routine ->
-	48,63,			// x,y
-	hurtme				// lastOn
+	48,63,				// x,y
+	0				// lastOn
 };
 
 //
@@ -986,7 +971,7 @@ void M_DrawNewGame()
 
 	std::string pslabel = (gamemission == heretic) ? "Wand " : "Pistol ";
 	pslabel += "Start Each Level ";
-	const int psy = NewDef.y + (LineHeight * 5) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel.c_str());
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel.c_str()), psy,
@@ -1003,6 +988,29 @@ namespace
 			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
 		    EpisodeMenu[i].fulltext = EpisodeInfos[i].fulltext;
 		}
+	}
+
+	void SetupSkillList()
+	{
+	    NewDef.lastOn = defaultskillmenu;
+
+	    int i = 0;
+	    for (; i < skillnum; ++i)
+	    {
+		    if (SkillInfos[i].pic_name.empty())
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].menu_name.c_str(), 8);
+		    }
+		    else
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].pic_name.c_str(), 8);
+		    }
+
+			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
+	    }
+
+		strncpy(NewGameMenu[i].name, "\0", 1);
+	    NewGameMenu[i].alphaKey = 'p';
 	}
 }
 
@@ -1035,6 +1043,8 @@ void M_NewGame(int choice)
 
 		epi = 0;
 
+		NewDef.numitems = skillnum + 1;
+
 		if (episodenum > 1)
 		{
 			SetupEpisodeList();
@@ -1042,6 +1052,7 @@ void M_NewGame(int choice)
 		}
 		else
 		{
+			SetupSkillList();
 			M_SetupNextMenu(&NewDef);
 		}
 	}
@@ -1063,9 +1074,10 @@ void M_DrawEpisode()
 	{
 		y -= (LINEHEIGHT * (episodenum - 4));
 	}
-
 	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 }
+
+static int skillchoice = 0;
 
 void M_VerifyNightmare(int ch)
 {
@@ -1075,7 +1087,7 @@ void M_VerifyNightmare(int ch)
 		return;
 	}
 
-	M_StartGame(nightmare);
+	M_StartGame(skillchoice);
 }
 
 void M_StartGame(int choice)
@@ -1117,14 +1129,23 @@ void M_StartGame(int choice)
 
 void M_ChooseSkill(int choice)
 {
-	if (choice == pistolstart)
+	if (choice == skillnum)
 	{
 		g_resetinvonexit = !g_resetinvonexit;
 		return;
 	}
-	else if (choice == nightmare)
+	else if (SkillInfos[choice].must_confirm)
 	{
-		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
+		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
+
+		if (must_confirm_text[0] == '$')
+			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+		               M_VerifyNightmare, true);
+		else
+			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+
+		skillchoice = choice;
+
 		return;
 	}
 
@@ -1157,14 +1178,18 @@ void M_Episode(int choice)
 	}
 
 	if (EpisodeInfos[epi].noskillmenu)
-		M_StartGame(2); // TODO: Implement defaultskillmenu
+		M_StartGame(defaultskillmenu);
 	else
+	{
+		SetupSkillList();
 		M_SetupNextMenu(&NewDef);
+	}
 }
 
 void M_Expansion(int choice)
 {
 	epi = choice;
+	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }
 
@@ -1623,12 +1648,11 @@ static void M_ChangeAutoAim(int choice)
 {
 	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
 	float aim = cl_autoaim;
-	int i;
 
 	if (!choice) {
 		// Select a lower autoaim
 
-		for (i = 6; i >= 1; i--) {
+		for (int i = 6; i >= 1; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i - 1];
 				break;
@@ -1637,7 +1661,7 @@ static void M_ChangeAutoAim(int choice)
 	} else {
 		// Select a higher autoaim
 
-		for (i = 5; i >= 0; i--) {
+		for (int i = 5; i >= 0; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i + 1];
 				break;

@@ -21,8 +21,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __VERSION_H__
-#define __VERSION_H__
+#pragma once
 
 
 #if defined(CLIENT_APP)
@@ -78,7 +77,7 @@
 #define DOTVERSIONSTR "10.0.0"
 #define GAMEVER (MAKEVER(10, 0, 0))
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2022 The Odamex Team"
 
 #define SERVERMAJ (VERMAJ(gameversion))
 #define SERVERMIN (VERMIN(gameversion))
@@ -114,5 +113,3 @@ const char* GitRevCount();
 const char* GitShortHash();
 const char* NiceVersionDetails();
 const char* NiceVersion();
-
-#endif //__VERSION_H__

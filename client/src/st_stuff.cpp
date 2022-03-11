@@ -27,37 +27,34 @@
 
 #include "odamex.h"
 
-#include "i_video.h"
-#include "z_zone.h"
-#include "m_random.h"
-#include "w_wad.h"
 #include "st_stuff.h"
+#include "i_video.h"
+#include "m_random.h"
 #include "st_lib.h"
-#include "r_local.h"
-#include "p_inter.h"
 #include "am_map.h"
 #include "m_cheat.h"
 #include "s_sound.h"
-#include "v_video.h"
-#include "v_text.h"
 #include "gstrings.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "gi.h"
-#include "cl_demo.h"
 #include "c_console.h"
 #include "g_gametype.h"
-#include "d_event.h"
-
 #include "p_ctf.h"
 
 
+// States for status bar code.
+enum st_stateenum_t
+{
+	AutomapState,
+	FirstPersonState
+
+};
+
 static bool st_needrefresh = true;
 
-static bool st_stopped = true;
-
 // lump number for PLAYPAL
-static int		lu_palette;
+static int lu_palette;
 
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
@@ -255,7 +252,7 @@ int ST_X;
 int ST_Y;
 
 // used for making messages go away
-static int st_msgcounter=0;
+static int st_msgcounter = 0;
 
 // whether in automap or first-person
 static st_stateenum_t st_gamestate;
@@ -320,62 +317,62 @@ static lumpHandle_t flagsbg;
 static lumpHandle_t arms[6][2];
 
 // ready-weapon widget
-static st_number_t		w_ready;
+static StatusBarWidgetNumber w_ready;
 
- // in deathmatch only, summary of frags stats
-static st_number_t		w_frags;
+// in deathmatch only, summary of frags stats
+static StatusBarWidgetNumber w_frags;
 
 // health widget
-static st_percent_t 	w_health;
+static StatusBarWidgetPercent w_health;
 
 // weapon ownership widgets
-static st_multicon_t	w_arms[6];
+static StatusBarWidgetMultiIcon w_arms[6];
 
 // face status widget
-static st_multicon_t	w_faces;
+static StatusBarWidgetMultiIcon w_faces;
 
 // keycard widgets
-static st_multicon_t	w_keyboxes[3];
+static StatusBarWidgetMultiIcon w_keyboxes[3];
 
 // armor widget
-static st_percent_t 	w_armor;
+static StatusBarWidgetPercent w_armor;
 
 // ammo widgets
-static st_number_t		w_ammo[4];
+static StatusBarWidgetNumber w_ammo[4];
 
 // max ammo widgets
-static st_number_t		w_maxammo[4];
+static StatusBarWidgetNumber w_maxammo[4];
 
 // lives widget
-static st_number_t		w_lives;
+static StatusBarWidgetNumber w_lives;
 
 // number of frags so far in deathmatch
-static int		st_fragscount;
+static int st_fragscount;
 
 // used to use appopriately pained face
-static int		st_oldhealth = -1;
+static int st_oldhealth = -1;
 
 // used for evil grin
-static bool		oldweaponsowned[NUMWEAPONS+1];
+static bool oldweaponsowned[NUMWEAPONS + 1];
 
- // count until face changes
-static int		st_facecount = 0;
+// count until face changes
+static int st_facecount = 0;
 
 // current face index, used by w_faces
 // [RH] not static anymore
-int				st_faceindex = 0;
+int st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static int		keyboxes[3];
+static int keyboxes[3];
 
 // copy of player info
-static int		st_health, st_armor;
-static int		st_ammo[4], st_maxammo[4];
-static int		st_weaponowned[6] = {0}, st_current_ammo;
-static int		st_lives;
+static int st_health, st_armor;
+static int st_ammo[4], st_maxammo[4];
+static int st_weaponowned[6] = {0}, st_current_ammo;
+static int st_lives;
 
 // a random number per tick
-static int		st_randomnumber;
+static int st_randomnumber;
 
 //
 // Heretic State Variables
@@ -455,8 +452,6 @@ cheatseq_t DoomCheats[] = {
 //
 // STATUS BAR CODE
 //
-
-void ST_Stop();
 void ST_createWidgets();
 
 int ST_StatusBarHeight(int surface_width, int surface_height)
@@ -538,7 +533,7 @@ bool ST_Responder(event_t *ev)
 	// Filter automap on/off.
 	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch(ev->data1)
+		switch (ev->data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -624,13 +619,13 @@ BEGIN_COMMAND (chase)
 		if (chasedemo)
 		{
 			chasedemo.Set(0.0f);
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 				it->cheats &= ~CF_CHASECAM;
 		}
 		else
 		{
 			chasedemo.Set(1.0f);
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 				it->cheats |= CF_CHASECAM;
 		}
 	}
@@ -647,8 +642,6 @@ END_COMMAND (chase)
 
 BEGIN_COMMAND (idmus)
 {
-	LevelInfos& levels = getLevelInfos();
-
 	if (argc > 1)
 	{
 		char *map;
@@ -656,10 +649,10 @@ BEGIN_COMMAND (idmus)
 		{
 			const int l = atoi(argv[1]);
 			if (l <= 99)
-				map = CalcMapName (0, l);
+				map = CalcMapName(0, l);
 			else
 			{
-				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -668,13 +661,13 @@ BEGIN_COMMAND (idmus)
 			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
 		}
 
-		level_pwad_info_t& info = levels.findByName(map);
+		level_pwad_info_t& info = getLevelInfos().findByName(map);
 		if (level.levelnum != 0)
 		{
 			if (info.music[0])
 			{
-				S_ChangeMusic(info.music.c_str(), 1);
-				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
+				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
+				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
 		}
 		else
@@ -826,11 +819,10 @@ static void ST_refreshBackground()
 //
 void ST_updateFaceWidget()
 {
-	int 		i;
-	static int	lastattackdown = -1;
-	static int	priority = 0;
-
+	static int lastattackdown = -1;
+	static int priority = 0;
 	player_t *plyr = &displayplayer();
+	int i;
 
 	if (priority < 10)
 	{
@@ -870,9 +862,7 @@ void ST_updateFaceWidget()
 
 	if (priority < 8)
 	{
-		if (plyr->damagecount
-			&& plyr->attacker
-			&& plyr->attacker != plyr->mo)
+		if (plyr->damagecount && plyr->attacker && plyr->attacker != plyr->mo)
 		{
 			// being attacked
 			priority = 7;
@@ -901,7 +891,7 @@ void ST_updateFaceWidget()
 					// whether left or right
 					diffang = plyr->mo->angle - badguyangle;
 					i = diffang <= ANG180;
-				} // confusing, aint it?
+				} // confusing, ain't it?
 
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset();
@@ -996,8 +986,6 @@ void ST_updateWidgets()
 	else
 		st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
-	w_ready.data = plyr->readyweapon;
-
 	st_health = plyr->health;
 	st_armor = plyr->armorpoints;
 
@@ -1010,7 +998,7 @@ void ST_updateWidgets()
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if(plyr->weaponowned[i + 1])
+		if (plyr->weaponowned[i + 1])
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;
@@ -1065,7 +1053,7 @@ void ST_Ticker()
 void ST_drawWidgets(bool force_refresh)
 {
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && G_IsCoopGame();
+	st_armson = G_IsCoopGame() && st_statusbaron;
 
 	// used by w_frags widget
 	st_fragson = !G_IsCoopGame() && st_statusbaron;
@@ -1097,7 +1085,8 @@ void ST_drawWidgets(bool force_refresh)
 
 
 static void ST_HticRefreshBackground();
-    //
+
+//
 // ST_Drawer
 //
 // If st_scale is disabled, the status bar is drawn directly to the rendering
@@ -1182,9 +1171,11 @@ static void ST_loadGraphics()
 		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
-	// Load percent key.
-	// Note: why not load STMINUS here, too?
+	// Load percent key
 	tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
+
+	// Load minus key
+	negminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
 
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
@@ -1336,9 +1327,7 @@ void ST_createWidgets()
 
 	// keyboxes 0-2
 	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0], &st_statusbaron);
-
 	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
-
 	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2], &st_statusbaron);
 
 	// ammo count (all four kinds)
@@ -1714,9 +1703,6 @@ void ST_HticInit()
 
 void ST_Start()
 {
-	if (!st_stopped)
-		ST_Stop();
-
 	ST_ForceRefresh();
 
 	st_gamestate = FirstPersonState;
@@ -1732,22 +1718,10 @@ void ST_Start()
 
 	for (int i = 0; i < 3; i++)
 		keyboxes[i] = -1;
-
-	negminus =
-	    W_CachePatchHandle((gamemission == heretic) ? "NEGNUM" : "STTMINUS", PU_STATIC);
-
-	ST_initNew();
-	gameinfo.statusBar->Start();
 	
-	st_stopped = false;
-}
+	ST_initNew();
 
-void ST_Stop()
-{
-	if (st_stopped)
-		return;
-
-	st_stopped = true;
+	ST_createWidgets();
 }
 
 void ST_Init()
@@ -1761,7 +1735,6 @@ void ST_Init()
 
 	gameinfo.statusBar->Init();
 }
-
 
 void STACK_ARGS ST_Shutdown()
 {

@@ -1254,7 +1254,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			int side = P_PointOnLineSide (thing->x, thing->y, ld);
 			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld-lines, oldside, thing, false);
+				P_CrossSpecialLine (ld, oldside, thing, false);
 		}
 	}
 
@@ -3058,6 +3058,12 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombdistancefloat = 1.f / (float)distance;
 	DamageSource = hurtSource;
 	bombmod = mod;
+
+	// [Blair] Prevent crash from barrels hit by crushers
+	if (bombsource == NULL && bombspot != NULL)
+	{
+		bombsource = bombspot;
+	}
 
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?

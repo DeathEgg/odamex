@@ -43,8 +43,13 @@
 #include "p_horde.h"
 #include "p_hordespawn.h"
 #include "g_mapinfo.h"
+#include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
+
+#ifdef CLIENT_APP
+#include "hu_speedometer.h"
+#endif
 
 void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(AActor* mo);
@@ -65,7 +70,6 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
-fixed_t P_GetActorSpeed(AActor* actor);
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
@@ -247,8 +251,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
-	state_t *st;
-
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
@@ -273,7 +275,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
 
-	if (sv_skill != sk_nightmare)
+	if (!G_GetCurrentSkill().instant_reaction)
 		reactiontime = info->reactiontime;
 
 	if (clientside)
@@ -283,7 +285,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
-	st = &states[info->spawnstate];
+	state_t* st = &states[info->spawnstate];
 	state = st;
 	tics = st->tics;
 	sprite = st->sprite;
@@ -407,7 +409,8 @@ void AActor::Destroy ()
 	SV_SendDestroyActor(this);
 
 	// Remove from health pool.
-	P_RemoveHealthPool(this);
+	if (!::savegamerestore)
+		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
@@ -717,7 +720,20 @@ void AActor::RunThink ()
 		}
 	}
 
-	P_MoveActor(this);
+#ifdef CLIENT_APP
+	if (player && ::consoleplayer_id == player->id)
+	{
+		v3double_t start, end;
+		M_ActorPositionToVec3(&start, this);
+		P_MoveActor(this);
+		M_ActorPositionToVec3(&end, this);
+		HU_AddPlayerSpeed(start, end);
+	}
+	else
+#endif
+	{
+		P_MoveActor(this);
+	}
 
 	if(predicting)
 		return;
@@ -735,7 +751,7 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		bool respawnmonsters = (sv_skill == sk_nightmare || sv_monstersrespawn);
+		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
 
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
@@ -748,7 +764,7 @@ void AActor::RunThink ()
 
 		movecount++;
 
-		if (movecount < 12*TICRATE)
+		if (movecount < G_GetCurrentSkill().respawn_counter * TICRATE)
 			return;
 
 		if (level.time & 31)
@@ -764,6 +780,9 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
+	const DWORD TLATE_NONE = 0xFFFFFFFF;
+	const DWORD TLATE_BOSS = 0xFFFFFFFE;
+
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
@@ -796,6 +815,7 @@ void AActor::Serialize (FArchive &arc)
 			<< flags
 			<< flags2
 			<< flags3
+			<< oflags
 			<< special1
 			<< special2
 			<< health
@@ -823,10 +843,22 @@ void AActor::Serialize (FArchive &arc)
 			<< gear;
 
 		// NOTE(jsd): This is pretty awful right here:
+		//       [AM] I am now part of the problem.
 		if (translation)
-			arc << (DWORD)(translation.getTable() - translationtables);
+		{
+			if (translation.getTable() == ::bosstable)
+			{
+				arc << TLATE_BOSS;
+			}
+			else
+			{
+				arc << (DWORD)(translation.getTable() - ::translationtables);
+			}
+		}
 		else
-			arc << (DWORD)0xffffffff;
+		{
+			arc << TLATE_NONE;
+		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
 	}
@@ -865,6 +897,7 @@ void AActor::Serialize (FArchive &arc)
 			>> flags
 			>> flags2 
 			>> flags3
+			>> oflags
 			>> special1
 			>> special2
 			>> health
@@ -897,14 +930,24 @@ void AActor::Serialize (FArchive &arc)
 
 		DWORD trans;
 		arc >> trans;
-		if (trans == (DWORD)0xffffffff)
+		if (trans == TLATE_NONE)
+		{
 			translation = translationref_t();
+		}
+		else if (trans == TLATE_BOSS)
+		{
+			translation = translationref_t(::bosstable);
+		}
 		else
 		{
 			if ((trans / 256) <= MAXPLAYERS)
-				translation = translationref_t(translationtables + trans, trans / 256);
+			{
+				translation = translationref_t(::translationtables + trans, trans / 256);
+			}
 			else
-				translation = translationref_t(translationtables + trans);
+			{
+				translation = translationref_t(::translationtables + trans);
+			}
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
@@ -2288,12 +2331,11 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
-	fixed_t speed = P_GetActorSpeed(th);
-	th->momx = FixedMul(speed, finecosine[an]);
-	th->momy = FixedMul(speed, finesine[an]);
+	th->momx = FixedMul(th->info->speed, finecosine[an]);
+	th->momy = FixedMul(th->info->speed, finesine[an]);
 
     dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-    dist = dist / speed;
+	dist = dist / th->info->speed;
 
     if (dist < 1)
 		dist = 1;
@@ -2351,7 +2393,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
+		float speed = FIXED2FLOAT(th->info->speed);
 
 		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
@@ -2365,11 +2407,9 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 	else
 	{
-		fixed_t speed = P_GetActorSpeed(th);
-
-		th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
-		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
-		th->momz = FixedMul(speed, slope);
+		th->momx = FixedMul(th->info->speed, finecosine[an >> ANGLETOFINESHIFT]);
+		th->momy = FixedMul(th->info->speed, finesine[an >> ANGLETOFINESHIFT]);
+		th->momz = FixedMul(th->info->speed, slope);
 	}
 
 	P_CheckMissileSpawn (th);
@@ -2425,7 +2465,7 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
+		float speed = FIXED2FLOAT(th->info->speed);
 
 		velocity.x = FIXED2FLOAT(finecosine[an >> ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT(finesine[an >> ANGLETOFINESHIFT]);
@@ -2439,11 +2479,9 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 	}
 	else
 	{
-		fixed_t speed = P_GetActorSpeed(th);
-
-		th->momx = FixedMul(speed, finecosine[an >> ANGLETOFINESHIFT]);
-		th->momy = FixedMul(speed, finesine[an >> ANGLETOFINESHIFT]);
-		th->momz = FixedMul(speed, slope);
+		th->momx = FixedMul(th->info->speed, finecosine[an >> ANGLETOFINESHIFT]);
+		th->momy = FixedMul(th->info->speed, finesine[an >> ANGLETOFINESHIFT]);
+		th->momz = FixedMul(th->info->speed, slope);
 	}
 
 	an = (th->angle - ANG90) >> ANGLETOFINESHIFT;
@@ -2664,9 +2702,6 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 void P_SpawnMapThing (mapthing2_t *mthing, int position)
 {
 	int i = -1;
-	int bit;
-	AActor *mobj;
-	fixed_t x, y, z;
 
 	if (mthing->type == 0 || mthing->type == -1)
 		return;
@@ -2798,15 +2833,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 	}
 
-	// check for apropriate skill level
-	if (sv_skill == sk_baby)
-		bit = 1;
-	else if (sv_skill == sk_nightmare)
-		bit = 4;
-	else
-		bit = 1 << (sv_skill.asInt() - 2);
-
-	if (!(mthing->flags & bit))
+	// check for appropriate skill level
+	if (!(mthing->flags & G_GetCurrentSkill().spawn_filter))
 		return;
 
 	// [RH] sound sequence overrides
@@ -2941,8 +2969,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		level.total_items++;
 
 	// spawn it
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
+	const fixed_t x = mthing->x << FRACBITS;
+	const fixed_t y = mthing->y << FRACBITS;
+	const fixed_t z = (mobjinfo[i].flags & MF_SPAWNCEILING) ? ONCEILINGZ : ONFLOORZ;
 
 	if (i == MT_WATERZONE)
 	{
@@ -2951,12 +2980,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
-		z = ONCEILINGZ;
-	else
-		z = ONFLOORZ;
-
-	mobj = new AActor (x, y, z, (mobjtype_t)i);
+	AActor* mobj = new AActor(x, y, z, (mobjtype_t)i);
 
 	if (i == MT_HORDESPAWN)
 	{

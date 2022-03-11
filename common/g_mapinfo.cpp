@@ -24,6 +24,7 @@
 #include "g_episode.h"
 #include "gi.h"
 #include "gstrings.h"
+#include "g_skill.h"
 #include "i_system.h"
 #include "oscanner.h"
 #include "p_setup.h"
@@ -449,7 +450,6 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		{
 			// mark level free of boss actions
 			mape->bossactions.clear();
-			mape->bossactions_donothing = true;
 		}
 		else
 		{
@@ -472,24 +472,10 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			if (tag != 0 || special == 11 || special == 51 || special == 52 ||
 			    special == 124)
 			{
-				if (mape->bossactions_donothing == true)
-					mape->bossactions_donothing = false;
-
-				OBossAction new_bossaction;
-
-				maplinedef_t mld;
-				mld.special = static_cast<short>(special);
-				mld.tag = static_cast<short>(tag);
-
-				if (map_format.getZDoom())
-				{
-					P_TranslateLineDef(&new_bossaction.ld, &mld);
-				}
-				else
-				{
-					new_bossaction.ld.special = mld.special;
-					new_bossaction.ld.id = mld.tag;
-				}
+				bossaction_t new_bossaction;
+				
+				new_bossaction.special = static_cast<short>(special);
+				new_bossaction.tag = static_cast<short>(tag);
 
 				new_bossaction.type = i;
 
@@ -659,6 +645,12 @@ void MIType_EatNext(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	ParseMapInfoHelper<std::string>(os, doEquals);
 }
 
+// Literally does nothing
+void MIType_DoNothing(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                    unsigned int flags2)
+{
+}
+
 // Sets the inputted data as an int
 void MIType_Int(OScanner& os, bool doEquals, void* data, unsigned int flags,
                 unsigned int flags2)
@@ -675,6 +667,98 @@ void MIType_Float(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	ParseMapInfoHelper<float>(os, doEquals);
 
 	*static_cast<float*>(data) = os.getTokenFloat();
+}
+
+// Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
+void MIType_Bool(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                  unsigned int flags2)
+{
+	*static_cast<bool*>(data) = flags;
+}
+
+// Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
+void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	SkillInfo& info = *static_cast<SkillInfo*>(data);
+	info.must_confirm = true;
+
+	if (doEquals)
+	{
+		os.scan();
+		if (os.compareTokenNoCase("="))
+		{
+			info.must_confirm_text.clear();
+			
+			do
+			{
+				os.mustScan();
+				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += "\n";
+				os.scan();
+			} while (os.compareToken(","));
+			os.unScan();
+
+			// Trim trailing newline.
+			if (info.must_confirm_text.length() > 0)
+			{
+				info.must_confirm_text.resize(info.must_confirm_text.length() - 1);
+			}
+		}
+		else
+		{
+			os.unScan();
+		}
+	}
+	else
+	{
+		os.scan();
+		info.must_confirm_text.clear();
+
+		if (os.isQuotedString())
+		{
+			os.unScan();
+			do
+			{
+				os.mustScan();
+				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += "\n";
+				os.scan();
+			} while (os.compareToken(","));
+			os.unScan();
+
+			// Trim trailing newline.
+			if (info.must_confirm_text.length() > 0)
+			{
+				info.must_confirm_text.resize(info.must_confirm_text.length() - 1);
+			}
+		}
+		else
+		{
+			os.unScan();
+		}
+	}
+}
+
+// Sets the inputted data as a char
+void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (os.getToken().size() > 1)
+		os.error("Expected single character string, got multi-character string");
+
+	*static_cast<char*>(data) = os.getToken()[0];
+}
+
+// Sets the inputted data as a std::string
+void MIType_String(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	*static_cast<std::string*>(data) = os.getToken();
 }
 
 // Sets the inputted data as a color
@@ -695,25 +779,33 @@ void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
 void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<OLumpName>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, doEquals);
 
-	if (os.compareTokenNoCase("EndPic"))
+	if (IsIdentifier(os))
 	{
-		// todo
-		if (doEquals)
-			MustGetStringName(os, ",");
+		if (os.compareTokenNoCase("EndPic"))
+		{
+			// todo
+			if (doEquals)
+				MustGetStringName(os, ",");
 
-		os.mustScan();
-	}
-	else if (os.compareTokenNoCase("EndSequence"))
-	{
-		// todo
-		if (doEquals)
-			MustGetStringName(os, ",");
+			os.mustScan();
+		}
+		else if (os.compareTokenNoCase("EndSequence"))
+		{
+			// todo
+			if (doEquals)
+				MustGetStringName(os, ",");
 
-		os.mustScan();
+			os.mustScan();
+		}
 	}
-	else if (os.compareTokenNoCase("endgame"))
+
+	// If not identifier, check if it's a lumpname
+	os.unScan();
+	MustGet<OLumpName>(os);
+
+	if (os.compareTokenNoCase("endgame"))
 	{
 		// endgame block
 		MustGetStringName(os, "{");
@@ -818,7 +910,7 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(os.getToken().c_str() + 1);
+		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -843,7 +935,7 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(musicname.c_str() + 1);
+		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -885,15 +977,22 @@ void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			return;
 		}
 	}
-	os.mustScanFloat();
-	/*if (HexenHack)
+	os.scan();
+	if (IsRealNum(os.getToken().c_str()))
 	{
-	    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+		/*if (HexenHack)
+		{
+		    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+		}
+		 else
+		{
+		    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
+		}*/
 	}
-	 else
+	else
 	{
-	    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-	}*/
+		os.unScan();
+	}
 }
 
 // Sets a flag
@@ -946,7 +1045,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(os.getToken());
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -983,7 +1082,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OString& s = GStrings(os.getToken());
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -998,6 +1097,183 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			*text = strdup(os.getToken().c_str());
 		}
 	}
+}
+
+// Sets the inputted data as a std::string
+void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                   unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (IsNum(os.getToken().c_str()))
+	{
+		const int num = os.getTokenInt();
+		if (num > 0)
+			*static_cast<int*>(data) |= (1 << (num - 1));
+	}
+	else
+	{
+		if (os.compareTokenNoCase("baby"))
+			*static_cast<int*>(data) |= 1;
+		else if (os.compareTokenNoCase("easy"))
+			*static_cast<int*>(data) |= 1;
+		else if (os.compareTokenNoCase("normal"))
+			*static_cast<int*>(data) |= 2;
+		else if (os.compareTokenNoCase("hard"))
+			*static_cast<int*>(data) |= 4;
+		else if (os.compareTokenNoCase("nightmare"))
+			*static_cast<int*>(data) |= 4;
+	}
+}
+
+// Sets the map to use the specific map07 bossactions
+void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                         unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector =
+	    *static_cast<std::vector<bossaction_t>*>(data);
+
+	// mancubus
+	bossactionvector.push_back(bossaction_t());
+	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
+	
+	it->type = MT_FATSO;
+	it->special = 23;
+	it->tag = 666;
+
+	// arachnotron
+	bossactionvector.push_back(bossaction_t());
+	it = (bossactionvector.end() - 1);
+	
+	it->type = MT_BABY;
+	it->special = 30;
+	it->tag = 667;
+}
+
+// Sets the map to use the baron bossaction
+void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                    unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	if (bossactionvector.size() == 0)
+		bossactionvector.push_back(bossaction_t());
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		it->type = MT_BRUISER;
+	}
+}
+
+// Sets the map to use the cyberdemon bossaction
+void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                         unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector =
+	    *static_cast<std::vector<bossaction_t>*>(data);
+
+	if (bossactionvector.size() == 0)
+		bossactionvector.push_back(bossaction_t());
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		it->type = MT_CYBORG;
+	}
+}
+
+// Sets the map to use the cyberdemon bossaction
+void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector =
+	    *static_cast<std::vector<bossaction_t>*>(data);
+
+	if (bossactionvector.size() == 0)
+		bossactionvector.push_back(bossaction_t());
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		it->type = MT_SPIDER;
+	}
+}
+
+//
+void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	std::vector<bossaction_t>::iterator it;
+	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
+	{
+		if (it->type != MT_NULL)
+		{
+			it->special = 11;
+			it->tag = 0;
+			return;
+		}
+	}
+
+	bossactionvector.push_back(bossaction_t());
+	it = bossactionvector.end() - 1;
+	it->special = 11;
+	it->tag = 0;
+}
+
+//
+void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
+                                   unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	std::vector<bossaction_t>::iterator it;
+	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
+	{
+		if (it->type != MT_NULL)
+		{
+			it->special = 29;
+			it->tag = 666;
+			return;
+		}
+	}
+
+	bossactionvector.push_back(bossaction_t());
+	it = bossactionvector.end() - 1;
+	it->special = 29;
+	it->tag = 666;
+}
+
+//
+void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	std::vector<bossaction_t>::iterator it;
+	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
+	{
+		if (it->type != MT_NULL)
+		{
+			it->special = 23;
+			it->tag = 666;
+			return;
+		}
+	}
+
+	bossactionvector.push_back(bossaction_t());
+	it = (bossactionvector.end() - 1);
+	it->special = 23;
+	it->tag = 666;
+}
+
+//
+void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	// todo
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1073,17 +1349,13 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY4("nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING)
 		ENTRY4("allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
 		       LEVEL_MONSTERSTELEFRAG)
-		ENTRY4("map07special", &MIType_SetFlag, &ref.flags, LEVEL_MAP07SPECIAL)
-		ENTRY4("baronspecial", &MIType_SetFlag, &ref.flags, LEVEL_BRUISERSPECIAL)
-		ENTRY4("cyberdemonspecial", &MIType_SetFlag, &ref.flags, LEVEL_CYBORGSPECIAL)
-		ENTRY4("spidermastermindspecial", &MIType_SetFlag, &ref.flags,
-		       LEVEL_SPIDERSPECIAL)
-		ENTRY5("specialaction_exitlevel", &MIType_SCFlags, &ref.flags, 0,
-		       ~LEVEL_SPECACTIONSMASK)
-		ENTRY5("specialaction_opendoor", &MIType_SCFlags, &ref.flags, LEVEL_SPECOPENDOOR,
-		       ~LEVEL_SPECACTIONSMASK)
-		ENTRY5("specialaction_lowerfloor", &MIType_SCFlags, &ref.flags,
-		       LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK)
+		ENTRY3("map07special", &MIType_Map07Special, &ref.bossactions)
+		ENTRY3("baronspecial", &MIType_BaronSpecial, &ref.bossactions)
+		ENTRY3("cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions)
+		ENTRY3("spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions)
+		ENTRY3("specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions)
+		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions)
+		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
 		ENTRY1("lightning")
 		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
 		ENTRY4("evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING)
@@ -1117,12 +1389,12 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		       &ref.exitpic) // todo: add intermission script support
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
-		ENTRY2("compat_shorttex", &MIType_EatNext)
-		ENTRY2("compat_limitpain", &MIType_EatNext)
+		ENTRY2("compat_shorttex", &MIType_DoNothing)
+		ENTRY2("compat_limitpain", &MIType_DoNothing)
 		ENTRY4("compat_dropoff", &MIType_SetFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
-		ENTRY2("compat_trace", &MIType_EatNext)
-		ENTRY2("compat_boomscroll", &MIType_EatNext)
-		ENTRY2("compat_sectorsounds", &MIType_EatNext)
+		ENTRY2("compat_trace", &MIType_DoNothing)
+		ENTRY2("compat_boomscroll", &MIType_DoNothing)
+		ENTRY2("compat_sectorsounds", &MIType_DoNothing)
 		ENTRY4("compat_nopassover", &MIType_SetFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
 	}
 };
@@ -1409,6 +1681,54 @@ void ParseEpisodeInfo(OScanner& os)
 	}
 }
 
+// SkillInfo
+template <>
+struct MapInfoDataSetter<SkillInfo>
+{
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter(SkillInfo& ref)
+	{
+		mapInfoDataContainer.reserve(33);
+
+		ENTRY3("ammofactor", &MIType_Float, &ref.ammo_factor)
+		ENTRY3("doubleammofactor", &MIType_Float, &ref.double_ammo_factor)
+		ENTRY3("dropammofactor", &MIType_Float, &ref.drop_ammo_factor)
+		ENTRY3("damagefactor", &MIType_Float, &ref.damage_factor)
+		ENTRY3("armorfactor", &MIType_Float, &ref.armor_factor)
+		ENTRY3("healthfactor", &MIType_Float, &ref.health_factor)
+		ENTRY3("kickbackfactor", &MIType_Float, &ref.kickback_factor)
+
+		ENTRY4("fastmonsters", &MIType_Bool, &ref.fast_monsters, true)
+		ENTRY4("slowmonsters", &MIType_Bool, &ref.slow_monsters, true)
+		ENTRY4("disablecheats", &MIType_Bool, &ref.disable_cheats, true)
+		ENTRY4("autousehealth", &MIType_Bool, &ref.auto_use_health, true)
+
+		ENTRY4("easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true)
+		ENTRY4("easykey", &MIType_Bool, &ref.easy_key, true)
+		ENTRY4("nomenu", &MIType_Bool, &ref.no_menu, true)
+		ENTRY3("respawntime", &MIType_Int, &ref.respawn_counter)
+		ENTRY3("respawnlimit", &MIType_Int, &ref.respawn_limit)
+		ENTRY3("aggressiveness", &MIType_Float, &ref.aggressiveness)
+		ENTRY3("spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter)
+		ENTRY4("spawnmulti", &MIType_Bool, &ref.spawn_multi, true)
+		ENTRY4("instantreaction", &MIType_Bool, &ref.instant_reaction, true)
+		ENTRY3("acsreturn", &MIType_Int, &ref.ACS_return)
+		ENTRY3("name", &MIType_String, &ref.menu_name)
+		ENTRY3("picname", &MIType_String, &ref.pic_name)
+		//ENTRY3("playerclassname", &???, &ref.menu_names_for_player_class) // todo - requires special MIType to work properly
+		ENTRY4("mustconfirm", &MIType_MustConfirm, &ref, true)
+		ENTRY3("key", &MIType_Char, &ref.shortcut)
+		ENTRY3("textcolor", &MIType_Color, &ref.text_color)
+		// ENTRY3("replaceactor", &???, &ref.replace) // todo - requires special MIType to work properly
+		ENTRY3("monsterhealth", &MIType_Float, &ref.monster_health)
+		ENTRY3("friendlyhealth", &MIType_Float, &ref.friendly_health)
+		ENTRY4("nopain", &MIType_Bool, &ref.no_pain, true)
+		ENTRY3("infighting", &MIType_Int, &ref.infighting)
+		ENTRY4("playerrespawn", &MIType_Bool, &ref.player_respawn, true)
+	}
+};
+
 void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -1469,10 +1789,10 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OString& s = GStrings(os.getToken());
+				const OString& s = GStrings(StdStringToUpper(os.getToken()));
 				if (s.empty())
 				{
-					os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
+					info.level_name = os.getToken();
 				}
 				info.level_name = s;
 			}
@@ -1519,15 +1839,29 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		}
 		else if (os.compareTokenNoCase("skill"))
 		{
-			// Not implemented
 			os.mustScan(); // Name
 
-			MapInfoDataSetter<void> setter;
-			ParseMapInfoLower<void>(os, setter);
+			if (skillnum < MAX_SKILLS)
+			{
+				SkillInfo &info = SkillInfos[skillnum];
+				info = SkillInfo();
+
+				info.name = os.getToken();
+
+				MapInfoDataSetter<SkillInfo> setter(info);
+				ParseMapInfoLower<SkillInfo>(os, setter);
+
+				++skillnum;
+			}
+			else
+			{
+				MapInfoDataSetter<void> setter;
+				ParseMapInfoLower<void>(os, setter);
+			}
 		}
 		else if (os.compareTokenNoCase("clearskills"))
 		{
-			// Not implemented
+			skillnum = 0;
 		}
 		else if (os.compareTokenNoCase("gameinfo"))
 		{
@@ -1565,6 +1899,14 @@ void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
 	int lump;
+
+	// Reset skill definitions
+	skillnum = 0;
+
+	//if (gamemission != heretic)
+	{
+		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+	}
 
 	switch (gamemission)
 	{
@@ -1636,4 +1978,11 @@ void G_ParseMapInfo()
 	if (episodenum == 0)
 		I_FatalError("%s: You cannot use clearepisodes in a MAPINFO if you do not define any "
 		             "new episodes after it.", __FUNCTION__);
+
+	if (defaultskillmenu > skillnum - 1)
+		defaultskillmenu = skillnum - 1;
+
+	if (skillnum == 0)
+		I_FatalError("%s: You cannot use clearskills in a MAPINFO if you do not define any "
+					"new skills after it.", __FUNCTION__);
 }

@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __AMMAP_H__
-#define __AMMAP_H__
+#pragma once
 
 #include "m_fixed.h"
 
@@ -84,6 +83,3 @@ void AM_Close();
 
 bool AM_ClassicAutomapVisible();
 bool AM_OverlayAutomapVisible();
-
-
-#endif
