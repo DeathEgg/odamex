@@ -999,17 +999,18 @@ namespace
 	    {
 		    if (SkillInfos[i].pic_name.empty())
 		    {
-			    strncpy(NewGameMenu[i].name, SkillInfos[i].menu_name.c_str(), 8);
+			    NewGameMenu[i].name = SkillInfos[i].menu_name.c_str();
+			    NewGameMenu[i].name.resize(8);
 		    }
 		    else
 		    {
-			    strncpy(NewGameMenu[i].name, SkillInfos[i].pic_name.c_str(), 8);
+			    NewGameMenu[i].name = SkillInfos[i].pic_name.c_str();
+			    NewGameMenu[i].name.resize(8);
 		    }
 
 			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
 	    }
-
-		strncpy(NewGameMenu[i].name, "\0", 1);
+		
 	    NewGameMenu[i].alphaKey = 'p';
 	}
 }
@@ -1166,13 +1167,11 @@ void M_Episode(int choice)
 
 	if (gamemission == heretic)
 	{
-		NewDef.menuitems = HereticNewGameMenu;
 		NewDef.x = 38;
 		NewDef.y = 30;
 	}
 	else
 	{
-		NewDef.menuitems = DoomNewGameMenu;
 		NewDef.x = 48;
 		NewDef.y = 63;
 	}

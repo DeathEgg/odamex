@@ -393,10 +393,10 @@ static lumpHandle_t ltface;
 static lumpHandle_t rtface;
 
 // health widget
-st_number_t w_numhealth;
+StatusBarWidgetNumber w_numhealth;
 
 // armor widget
-st_number_t w_numarmor;
+StatusBarWidgetNumber w_numarmor;
 
 // these are now in d_dehacked.cpp
 extern byte cheat_mus_seq[9];
@@ -1601,7 +1601,7 @@ void ST_HticUpdateWidgets()
 	else
 		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
-	w_ready.data = plyr->readyweapon;
+	//w_ready.data = plyr->readyweapon; // todo
 
 	// update the chain health value
 	st_health = plyr->health;
