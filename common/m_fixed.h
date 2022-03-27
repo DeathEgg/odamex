@@ -40,18 +40,37 @@ public:
 	// constructors
 	FixedPt() : m_data(0) {}
 	FixedPt(const FixedPt& pt) : m_data(pt.m_data) {}
-	FixedPt(const int i) : m_data(i) {}
+	FixedPt(const T i) : m_data(i) {}
 
-	// operators
+	// assignment operators
+	FixedPt& operator=(const FixedPt<T>& pt)
+	{
+		m_data = pt.m_data;
+		return *this;
+	}
+	FixedPt& operator=(const T i)
+	{
+		m_data = i;
+		return *this;
+	}
+	FixedPt& operator=(const FixedPt<T>& pt)
+	{
+		m_data = pt.m_data;
+		return *this;
+	}
+
+	// comparison operators
+
+	// arithmetic operators
 	inline FixedPt operator+(const FixedPt& pt) const { return FixedPt(m_data + pt.m_data); }
-	inline FixedPt operator+(const int i) const { return FixedPt(m_data + i); }
+	inline FixedPt operator+(const T i) const { return FixedPt(m_data + i); }
 	inline FixedPt operator-(const FixedPt& pt) const { return FixedPt(m_data - pt.m_data); }
-	inline FixedPt operator-(const int i) const { return FixedPt(m_data - i); }
+	inline FixedPt operator-(const T i) const { return FixedPt(m_data - i); }
 	inline FixedPt operator*(const FixedPt& pt) const
 	{
 		return static_cast<fixed_t>((static_cast<int64_t>(m_data) * pt.m_data) >> FRACBITS);
 	}
-	inline FixedPt operator*(const int i) const
+	inline FixedPt operator*(const T i) const
 	{
 		return static_cast<fixed_t>((static_cast<int64_t>(m_data) * i) >> FRACBITS);
 	}
@@ -61,7 +80,7 @@ public:
 		           ? ((m_data ^ pt.m_data) >> 31) ^ MAXINT
 		           : static_cast<fixed_t>((static_cast<int64_t>(m_data) << FRACBITS) / pt.m_data);
 	}
-	inline FixedPt operator/(const int i) const
+	inline FixedPt operator/(const T i) const
 	{
 		return (abs(m_data) >> 14) >= abs(i)
 		           ? ((m_data ^ i) >> 31) ^ MAXINT
@@ -72,7 +91,7 @@ public:
 		m_data += pt.m_data;
 		return *this;
 	}
-	inline FixedPt& operator+=(const int i)
+	inline FixedPt& operator+=(const T i)
 	{
 		m_data += i;
 		return *this;
@@ -82,7 +101,7 @@ public:
 		m_data -= pt.m_data;
 		return *this;
 	}
-	inline FixedPt& operator-=(const int i)
+	inline FixedPt& operator-=(const T i)
 	{
 		m_data -= i;
 		return *this;
@@ -92,7 +111,7 @@ public:
 		*this = *this * pt;
 		return *this;
 	}
-	inline FixedPt& operator*=(const int i)
+	inline FixedPt& operator*=(const T i)
 	{
 		*this = *this * i;
 		return *this;
@@ -102,7 +121,7 @@ public:
 		*this = *this / pt;
 		return *this;
 	}
-	inline FixedPt& operator/=(const int i)
+	inline FixedPt& operator/=(const T i)
 	{
 		*this = *this / i;
 		return *this;
@@ -135,7 +154,29 @@ public:
 	operator float() { return m_data * (1.0f / static_cast<float>(FRACUNIT)); }
 	operator double() { return m_data * (1.0f / static_cast<double>(FRACUNIT)); }
 
+	// friends
+	template <typename T>
+	friend std::ostream& operator<<(std::ostream& os, const FixedPt<T>& pt);
+	template <typename T>
+	friend std::istream& operator>>(std::istream& is, FixedPt<T>& pt);
 };
+
+//
+// non-member functions
+//
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const FixedPt<T>& pt)
+{
+	os << pt.m_data;
+	return os;
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& is, FixedPt<T>& pt)
+{
+	is >> pt.m_data;
+	return is;
+}
 
 typedef FixedPt<int> fixed_t;            // fixed 16.16
 typedef FixedPt<unsigned int> dsfixed_t; // fixedpt used by span drawer
