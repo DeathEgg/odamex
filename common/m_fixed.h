@@ -31,53 +31,126 @@
 #define FRACBITS				16
 #define FRACUNIT				(1<<FRACBITS)
 
-typedef int fixed_t;				// fixed 16.16
-typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
-
+template <typename T>
 class FixedPt
 {
-	int m_data;
+	T m_data;
 
 public:
 	// constructors
-	FixedPt() {}
+	FixedPt() : m_data(0) {}
 	FixedPt(const FixedPt& pt) : m_data(pt.m_data) {}
 	FixedPt(const int i) : m_data(i) {}
 
 	// operators
-	FixedPt operator+(const FixedPt& pt) const { return FixedPt(m_data + pt.m_data); }
-	FixedPt operator+(const int i) const { return FixedPt(m_data + i); }
-	FixedPt operator-(const FixedPt& pt) const { return FixedPt(m_data - pt.m_data); }
-	FixedPt operator-(const int i) const { return FixedPt(m_data - i); }
-	FixedPt operator*(const FixedPt& pt) const { return (fixed_t)((static_cast<int64_t>(m_data) * pt.m_data) >> FRACBITS); }
-	FixedPt operator*(const int i) const { return (fixed_t)(((int64_t)m_data * i) >> FRACBITS); }
-	FixedPt operator/(const FixedPt& pt) const
+	inline FixedPt operator+(const FixedPt& pt) const { return FixedPt(m_data + pt.m_data); }
+	inline FixedPt operator+(const int i) const { return FixedPt(m_data + i); }
+	inline FixedPt operator-(const FixedPt& pt) const { return FixedPt(m_data - pt.m_data); }
+	inline FixedPt operator-(const int i) const { return FixedPt(m_data - i); }
+	inline FixedPt operator*(const FixedPt& pt) const
+	{
+		return static_cast<fixed_t>((static_cast<int64_t>(m_data) * pt.m_data) >> FRACBITS);
+	}
+	inline FixedPt operator*(const int i) const
+	{
+		return static_cast<fixed_t>((static_cast<int64_t>(m_data) * i) >> FRACBITS);
+	}
+	inline FixedPt operator/(const FixedPt& pt) const
 	{
 		return (abs(m_data) >> 14) >= abs(pt.m_data)
 		           ? ((m_data ^ pt.m_data) >> 31) ^ MAXINT
 		           : static_cast<fixed_t>((static_cast<int64_t>(m_data) << FRACBITS) / pt.m_data);
 	}
-	FixedPt operator/(const int i) const
+	inline FixedPt operator/(const int i) const
 	{
 		return (abs(m_data) >> 14) >= abs(i)
 		           ? ((m_data ^ i) >> 31) ^ MAXINT
 		           : static_cast<fixed_t>((static_cast<int64_t>(m_data) << FRACBITS) / i);
 	}
+	inline FixedPt& operator+=(const FixedPt& pt)
+	{
+		m_data += pt.m_data;
+		return *this;
+	}
+	inline FixedPt& operator+=(const int i)
+	{
+		m_data += i;
+		return *this;
+	}
+	inline FixedPt& operator-=(const FixedPt& pt)
+	{
+		m_data -= pt.m_data;
+		return *this;
+	}
+	inline FixedPt& operator-=(const int i)
+	{
+		m_data -= i;
+		return *this;
+	}
+	inline FixedPt& operator*=(const FixedPt& pt)
+	{
+		*this = *this * pt;
+		return *this;
+	}
+	inline FixedPt& operator*=(const int i)
+	{
+		*this = *this * i;
+		return *this;
+	}
+	inline FixedPt& operator/=(const FixedPt& pt)
+	{
+		*this = *this / pt;
+		return *this;
+	}
+	inline FixedPt& operator/=(const int i)
+	{
+		*this = *this / i;
+		return *this;
+	}
+	inline FixedPt& operator++()
+	{
+		m_data = m_data + (1 << FRACBITS);
+		return *this;
+	}
+	inline FixedPt operator++(int)
+	{
+		FixedPt old = *this;
+		operator++();
+		return old;
+	}
+	inline FixedPt& operator--()
+	{
+		m_data = m_data - (1 << FRACBITS);
+		return *this;
+	}
+	inline FixedPt operator--(int)
+	{
+		FixedPt old = *this;
+		operator--();
+		return old;
+	}
+
+	// casting
+	operator int() { return (m_data + FRACUNIT / 2) / FRACUNIT; }
+	operator float() { return m_data * (1.0f / static_cast<float>(FRACUNIT)); }
+	operator double() { return m_data * (1.0f / static_cast<double>(FRACUNIT)); }
+
 };
+
+typedef FixedPt<int> fixed_t;            // fixed 16.16
+typedef FixedPt<unsigned int> dsfixed_t; // fixedpt used by span drawer
 
 //
 // Fixed Point / Floating Point Conversion
 //
 inline float FIXED2FLOAT(fixed_t x)
 {
-	static const float factor = 1.0f / float(FRACUNIT);
-	return x * factor;
+	return x;
 }
 
 inline double FIXED2DOUBLE(fixed_t x)
 {
-	static const double factor = 1.0 / double(FRACUNIT);
-	return x * factor;
+	return x;
 }
 
 inline fixed_t FLOAT2FIXED(float x)
@@ -106,7 +179,7 @@ inline fixed_t INT2FIXED(int x)
 //
 inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 {
-	return (fixed_t)(((int64_t)a * b) >> FRACBITS);
+	return a * b;
 }
 
 //
@@ -114,8 +187,7 @@ inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 //
 inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
-	return (abs(a) >> 14) >= abs(b) ? ((a ^ b) >> 31) ^ MAXINT :
-		(fixed_t)(((int64_t)a << FRACBITS) / b);
+	return a / b;
 }
 
 //
