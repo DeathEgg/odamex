@@ -34,6 +34,37 @@
 typedef int fixed_t;				// fixed 16.16
 typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
 
+class FixedPt
+{
+	int m_data;
+
+public:
+	// constructors
+	FixedPt() {}
+	FixedPt(const FixedPt& pt) : m_data(pt.m_data) {}
+	FixedPt(const int i) : m_data(i) {}
+
+	// operators
+	FixedPt operator+(const FixedPt& pt) const { return FixedPt(m_data + pt.m_data); }
+	FixedPt operator+(const int i) const { return FixedPt(m_data + i); }
+	FixedPt operator-(const FixedPt& pt) const { return FixedPt(m_data - pt.m_data); }
+	FixedPt operator-(const int i) const { return FixedPt(m_data - i); }
+	FixedPt operator*(const FixedPt& pt) const { return (fixed_t)((static_cast<int64_t>(m_data) * pt.m_data) >> FRACBITS); }
+	FixedPt operator*(const int i) const { return (fixed_t)(((int64_t)m_data * i) >> FRACBITS); }
+	FixedPt operator/(const FixedPt& pt) const
+	{
+		return (abs(m_data) >> 14) >= abs(pt.m_data)
+		           ? ((m_data ^ pt.m_data) >> 31) ^ MAXINT
+		           : static_cast<fixed_t>((static_cast<int64_t>(m_data) << FRACBITS) / pt.m_data);
+	}
+	FixedPt operator/(const int i) const
+	{
+		return (abs(m_data) >> 14) >= abs(i)
+		           ? ((m_data ^ i) >> 31) ^ MAXINT
+		           : static_cast<fixed_t>((static_cast<int64_t>(m_data) << FRACBITS) / i);
+	}
+};
+
 //
 // Fixed Point / Floating Point Conversion
 //
