@@ -289,15 +289,13 @@ void P_PlayerInZDoomSector(player_t* player)
 		P_ThrustMobj(player->mo, 0, 2048 * 28);
 		break;
 	case Scroll_Strife_Current:
-		int anglespeed;
-		fixed_t carryspeed;
-		angle_t angle;
-
-		anglespeed = sector->tag - 100;
-		carryspeed = (anglespeed % 10) * 4096;
-		angle = (anglespeed / 10) * ANG45;
-		P_ThrustMobj(player->mo, angle, carryspeed);
-		break;
+		{
+			const int anglespeed = sector->tag - 100;
+			const fixed_t carryspeed = (anglespeed % 10) * 4096;
+			const angle_t angle = (anglespeed / 10) * ANG45;
+			P_ThrustMobj(player->mo, angle, carryspeed);
+			break;
+		}
 	case Scroll_Carry_East5:
 	case Scroll_Carry_East10:
 	case Scroll_Carry_East25:
