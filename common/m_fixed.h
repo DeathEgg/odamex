@@ -97,13 +97,13 @@ public:
 	FixedPt operator-(const FixedPt& pt) const { return m_data - pt.m_data; }
 	FixedPt operator*(const FixedPt& pt) const
 	{
-		return FixedPt((static_cast<int64_t>(m_data) * pt.m_data) >> FRACBITS);
+		return static_cast<FixedPt>((static_cast<int64_t>(m_data) * pt.m_data) >> FRACBITS);
 	}
 	FixedPt operator/(const FixedPt& pt) const
 	{
 		return (abs(m_data) >> 14) >= abs(pt.m_data)
 		           ? ((m_data ^ pt.m_data) >> 31) ^ MAXINT
-		           : FixedPt((static_cast<int64_t>(m_data) << FRACBITS) / pt.m_data);
+		           : static_cast<FixedPt>((static_cast<int64_t>(m_data) << FRACBITS) / pt.m_data);
 	}
 	FixedPt operator%(const FixedPt& pt) const { return m_data % pt.m_data; }
 	FixedPt operator^(const FixedPt& pt) const { return m_data ^ pt.m_data; }
@@ -174,6 +174,16 @@ public:
 		m_data |= pt.m_data;
 		return *this;
 	}
+	FixedPt& operator<<=(const FixedPt& i)
+	{
+		m_data <<= static_cast<int>(i);
+		return *this;
+	}
+	FixedPt& operator>>=(const FixedPt& i)
+	{
+		m_data >>= static_cast<int>(i);
+		return *this;
+	}
 
 	template <typename U>
 	FixedPt& operator+=(const U i)
@@ -223,7 +233,20 @@ public:
 		m_data |= reinterpret_cast<int>(i);
 		return *this;
 	}
+	template <typename U>
+	FixedPt& operator<<=(const U i)
+	{
+		m_data <<= static_cast<int>(i);
+		return *this;
+	}
+	template <typename U>
+	FixedPt& operator>>=(const U i)
+	{
+		m_data >>= static_cast<int>(i);
+		return *this;
+	}
 
+	// increment/decrement
 	FixedPt& operator++()
 	{
 		m_data = m_data + (1 << FRACBITS);
@@ -291,6 +314,10 @@ template <typename T, typename U>
 U operator/(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) / pt; }
 template <typename T, typename U>
 U operator%(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) % pt; }
+template <typename T, typename U>
+U operator<<(U& i, const FixedPt<T>& pt) { return i << static_cast<int>(pt); }
+template <typename T, typename U>
+U operator>>(U& i, const FixedPt<T>& pt) { return i >> static_cast<int>(pt); }
 
 // arithmetic assignment operators
 template <typename T, typename U>
@@ -303,10 +330,23 @@ template <typename T, typename U>
 U& operator/=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) / pt; }
 template <typename T, typename U>
 U& operator%=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) % pt; }
+template <typename T, typename U>
+U& operator<<=(U& i, const FixedPt<T>& pt) { return i = i << static_cast<int>(pt); }
+template <typename T, typename U>
+U& operator>>=(U& i, const FixedPt<T>& pt) { return i = i >> static_cast<int>(pt); }
 
 
 typedef FixedPt<int> fixed_t;            // fixed 16.16
 typedef FixedPt<unsigned int> dsfixed_t; // fixedpt used by span drawer
+
+//
+// Related functions
+//
+template <typename T>
+FixedPt<T> abs(FixedPt<T> pt)
+{
+	return pt & (1 << 31);
+}
 
 //
 // Fixed Point / Floating Point Conversion

@@ -1309,7 +1309,7 @@ static BOOL PIT_ApplyTorque (line_t *ld)
 		AActor *mo = tmthing;
 
 		fixed_t dist =								// lever arm
-	  + (ld->dx >> FRACBITS) * (mo->y >> FRACBITS)
+		(ld->dx >> FRACBITS) * (mo->y >> FRACBITS)
 	  - (ld->dy >> FRACBITS) * (mo->x >> FRACBITS)
 	  - (ld->dx >> FRACBITS) * (ld->v1->y >> FRACBITS)
 	  + (ld->dy >> FRACBITS) * (ld->v1->x >> FRACBITS);
