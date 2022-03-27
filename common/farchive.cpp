@@ -719,6 +719,22 @@ FArchive &FArchive::operator>> (double &w)
 	return *this;
 }
 
+template <typename T>
+FArchive& FArchive::operator<<(FixedPt<T>& w)
+{
+	SWAP_DWORD(w);
+	Write(&w, sizeof(DWORD));
+	return *this;
+}
+
+template <typename T>
+FArchive& FArchive::operator>>(FixedPt<T>& w)
+{
+	Read(&w, sizeof(DWORD));
+	SWAP_DWORD(w);
+	return *this;
+}
+
 FArchive& FArchive::operator<< (argb_t color)
 {
 	byte a = color.geta(), r = color.getr(), g = color.getg(), b = color.getb();

@@ -25,6 +25,7 @@
 #pragma once
 
 #include "dobject.h"
+#include "m_fixed.h"
 
 
 #define FA_RESET (1 << 0)
@@ -156,7 +157,9 @@ public:
 	FArchive& operator<< (DWORD i);
 	FArchive& operator<< (QWORD i);
 	FArchive& operator<< (float f);
-	FArchive& operator<< (double d);
+	FArchive& operator<<(double d);
+	template <typename T>
+	FArchive& operator<<(FixedPt<T>& pt);
 	FArchive& operator<< (argb_t color);
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
@@ -181,6 +184,8 @@ public:
 	FArchive& operator>> (QWORD& i);
 	FArchive& operator>> (float& f);
 	FArchive& operator>> (double& d);
+	template <typename T>
+	FArchive& operator>>(FixedPt<T>& pt);
 	FArchive& operator>> (argb_t& color);
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
