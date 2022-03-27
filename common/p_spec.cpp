@@ -2461,11 +2461,6 @@ void DScroller::RunThink ()
 
 	switch (m_Type)
 	{
-		sector_t *sec;
-		fixed_t height, waterheight;	// killough 4/4/98: add waterheight
-		msecnode_t *node;
-		AActor *thing;
-
 		case sc_side:				// killough 3/7/98: Scroll wall texture
 			sides[m_Affectee].textureoffset += dx;
 			sides[m_Affectee].rowoffset += dy;
@@ -2487,13 +2482,15 @@ void DScroller::RunThink ()
 			// killough 3/20/98: use new sector list which reflects true members
 			// killough 3/27/98: fix carrier bug
 			// killough 4/4/98: Underwater, carry things even w/o gravity
-			sec = sectors + m_Affectee;
-			height = P_HighestHeightOfFloor(sec);
-			waterheight = sec->heightsec &&
-				P_HighestHeightOfFloor(sec->heightsec) > height ?
-				P_HighestHeightOfFloor(sec->heightsec) : MININT;
+			sector_t* sec = sectors + m_Affectee;
+			const fixed_t height = P_HighestHeightOfFloor(sec);
+		    const fixed_t waterheight =
+		        sec->heightsec && P_HighestHeightOfFloor(sec->heightsec) > height
+		            ? P_HighestHeightOfFloor(sec->heightsec)
+		            : MININT;
+			AActor* thing;
 
-			for (node = sec->touching_thinglist; node; node = node->m_snext)
+			for (msecnode_t* node = sec->touching_thinglist; node; node = node->m_snext)
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
 					(!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
 					 thing->z < waterheight))
