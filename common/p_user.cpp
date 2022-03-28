@@ -469,7 +469,7 @@ void P_CalcHeight (player_t *player)
 
 	// [SL] Scale view-bobbing based on user's preference (if the server allows)
 	if (sv_allowmovebob || (clientside && serverside))
-		bob *= cl_movebob;
+		bob *= cl_movebob.asInt();
 
 	player->viewz = player->mo->z + player->viewheight + bob;
 

@@ -1810,10 +1810,10 @@ void P_SlideMove (AActor *mo)
 	// move up to the wall
 	if (bestslidefrac == FRACUNIT+1)
 	{
-		fixed_t xmove, ymove;
 		// the move must have hit the middle, so stairstep
 	  stairstep:
-		xmove = 0, ymove = mo->momy;
+		fixed_t xmove = 0;
+		fixed_t ymove = mo->momy;
 		walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
 		if (!P_TryMove (mo, mo->x + xmove, mo->y + ymove, true, walkplane))
 		{
@@ -2036,9 +2036,9 @@ bool P_ShootLine(intercept_t* in)
 	}
 
 	fixed_t ceilingheight1 = P_CeilingHeight(crossx, crossy, sec1);
-	fixed_t ceilingheight2 = sec2 ? P_CeilingHeight(crossx, crossy, sec2) : MAXINT;
+	fixed_t ceilingheight2 = sec2 ? P_CeilingHeight(crossx, crossy, sec2) : fixed_t(MAXINT);
 	fixed_t floorheight1 = P_FloorHeight(crossx, crossy, sec1);
-	fixed_t floorheight2 = sec2 ? P_FloorHeight(crossx, crossy, sec2) : MAXINT;
+	fixed_t floorheight2 = sec2 ? P_FloorHeight(crossx, crossy, sec2) : fixed_t(MAXINT);
 
 	// position the destination for the bullet puff a bit closer
 	fixed_t frac = in->frac - FixedDiv(4 * FRACUNIT, attackrange);

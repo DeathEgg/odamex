@@ -2276,7 +2276,7 @@ bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t 
 		{
 			dist = 1;
 		}
-		actor->momz = (target->z + (seekcenter ? target->height / 2 : 0) - actor->z) / dist;
+		actor->momz = (target->z + (seekcenter ? target->height / 2 : fixed_t(0)) - actor->z) / dist;
 	}
 	return (true);
 }

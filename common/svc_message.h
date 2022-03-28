@@ -55,12 +55,9 @@ struct PlaySoundType
 	};
 	tag_e tag;
 
-	union {
+	struct {
 		AActor* mo;
-		struct
-		{
-			fixed_t x, y;
-		} pos;
+		v2fixed_t pos;
 	} data;
 
 	PlaySoundType() : tag(PS_NONE)

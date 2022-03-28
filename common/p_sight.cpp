@@ -511,7 +511,7 @@ bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boo
 	// thereby, "t2->[x,y] + or - w[x,y]" gives you the edges of t2 from t1's point of view
 	// this function used to only check the middle of t2
 	v3double_t d, r, w;
-	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, 0);
+	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, fixed_t(0));
 	M_NormalizeVec3(&d, &d);
 	M_SetVec3(&r, -d.y, d.x, 0.0);
 	M_ScaleVec3(&w, &r, FIXED2FLOAT(t2->radius));
@@ -913,7 +913,7 @@ bool P_CheckSightEdgesDoom
 // thereby, "t2->[x,y] + or - w[x,y]" gives you the edges of t2 from t1's point of view
 // this function used to only check the middle of t2
 	v3double_t d, r, w;
-	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, 0);
+	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, fixed_t(0));
 	M_NormalizeVec3(&d, &d);
 	M_SetVec3(&r, -d.y, d.x, 0.0);
 	M_ScaleVec3(&w, &r, FIXED2FLOAT(t2->radius) + radius_boost);

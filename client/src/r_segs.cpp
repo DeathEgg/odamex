@@ -267,7 +267,7 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 {
 	if (calc_light)
 	{
-		int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+		int index = clamp(rw_light >> LIGHTSCALESHIFT, fixed_t(0), fixed_t(MAXLIGHTSCALE - 1));
 		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
@@ -360,7 +360,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		{
 			for (int x = start; x <= stop; x++)
 			{
-				int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				int index = clamp(rw_light >> LIGHTSCALESHIFT, fixed_t(0), fixed_t(MAXLIGHTSCALE - 1));
 				light_lookup[x] = walllights[index];
 				rw_light += rw_lightstep;
 			}

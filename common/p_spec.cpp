@@ -2487,7 +2487,7 @@ void DScroller::RunThink ()
 		    const fixed_t waterheight =
 		        sec->heightsec && P_HighestHeightOfFloor(sec->heightsec) > height
 		            ? P_HighestHeightOfFloor(sec->heightsec)
-		            : MININT;
+		            : fixed_t(MININT);
 			AActor* thing;
 
 			for (msecnode_t* node = sec->touching_thinglist; node; node = node->m_snext)

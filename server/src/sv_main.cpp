@@ -895,7 +895,7 @@ bool SV_SetupUserInfo(player_t &player)
 	if (gender < 0 || gender >= NUMGENDER)
 		gender = GENDER_NEUTER;
 
-	aimdist = clamp(aimdist, 0, 5000 * 16384);
+	aimdist = clamp(aimdist, fixed_t(0), fixed_t(5000 * 16384));
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
 		switchweapon = WPSW_ALWAYS;

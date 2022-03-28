@@ -1178,7 +1178,7 @@ void R_DrawParticle(vissprite_t* vis)
 	// vis->mobjflags holds translucency level (0-255)
 	dspan.translevel = (vis->mobjflags + 1) << 8;
 	// vis->startfrac holds palette color index
-	dspan.color = vis->startfrac;
+	dspan.color = static_cast<int>(vis->startfrac);
 
 	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
 		R_FillTranslucentSpan();

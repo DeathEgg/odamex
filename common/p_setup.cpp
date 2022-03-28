@@ -2039,7 +2039,7 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 
 	v3float_t p, v1, v2, cross;
 	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
-	M_SetVec3f(&v1, line->dx, line->dy, 0);
+	M_SetVec3f(&v1, line->dx, line->dy, fixed_t(0));
 	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
 
 	M_CrossProductVec3f(&cross, &v1, &v2);

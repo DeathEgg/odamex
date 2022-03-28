@@ -652,7 +652,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		}
         else
         {
-            door = new DDoor(sec, line, type, speed, delay);
+            door = new DDoor(sec, line, type, fixed_t(speed), delay);
             P_AddMovingCeiling(sec);
         }
 		if (door)
@@ -670,7 +670,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			if (sec->ceilingdata)
 				continue;
 
-			door = new DDoor(sec, line, type, speed, delay);
+			door = new DDoor(sec, line, type, fixed_t(speed), delay);
 			P_AddMovingCeiling(sec);
 			
 			if (door)

@@ -991,24 +991,20 @@ void A_GunFlashTo(AActor* mo)
 //
 void A_WeaponProjectile(AActor* mo)
 {
-	fixed_t type, angle, pitch, spawnofs_xy, spawnofs_z;
-	AActor* proj;
-	int an;
-
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state || !psp->state->args[0])
 		return;
 
-	type = psp->state->args[0] - 1;
-	angle = psp->state->args[1];
-	pitch = psp->state->args[2];
-	spawnofs_xy = psp->state->args[3];
-	spawnofs_z = psp->state->args[4];
+	const fixed_t type = psp->state->args[0] - 1;
+	const fixed_t angle = psp->state->args[1];
+	const fixed_t pitch = psp->state->args[2];
+	const fixed_t spawnofs_xy = psp->state->args[3];
+	const fixed_t spawnofs_z = psp->state->args[4];
 
 	if (serverside)
-		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
+		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)(int)type, angle, pitch, spawnofs_xy, spawnofs_z);
 }
 
 //

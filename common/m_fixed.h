@@ -23,13 +23,15 @@
 
 #pragma once
 
+#include "c_cvars.h"
+
 #include <stdlib.h>
 
 //
 // Fixed point, 32bit as 16.16.
 //
-#define FRACBITS				16
-#define FRACUNIT				(1<<FRACBITS)
+#define FRACBITS 16
+#define FRACUNIT (1<<FRACBITS)
 
 template <typename T>
 class FixedPt
@@ -82,6 +84,10 @@ public:
 
 	// casting
 	operator bool() const { return m_data != 0; }
+	operator char() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
+	operator unsigned char() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
+	operator short() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
+	operator unsigned short() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
 	operator int() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
 	operator unsigned int() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
 	operator long() const { return (m_data + FRACUNIT / 2) / FRACUNIT; }
@@ -102,7 +108,7 @@ public:
 	FixedPt operator/(const FixedPt& pt) const
 	{
 		return (abs(m_data) >> 14) >= abs(pt.m_data)
-		           ? ((m_data ^ pt.m_data) >> 31) ^ MAXINT
+		           ? static_cast<FixedPt>(((m_data ^ pt.m_data) >> 31) ^ MAXINT)
 		           : static_cast<FixedPt>((static_cast<int64_t>(m_data) << FRACBITS) / pt.m_data);
 	}
 	FixedPt operator%(const FixedPt& pt) const { return m_data % pt.m_data; }
@@ -113,25 +119,25 @@ public:
 	FixedPt operator>>(const FixedPt& pt) const { return m_data >> pt.m_data; }
 
 	template <typename U>
-	FixedPt operator+(const U i) const { return m_data + static_cast<FixedPt>(i); }
+	FixedPt operator+(const U& i) const { return m_data + static_cast<FixedPt>(i); }
 	template <typename U>
-	FixedPt operator-(const U i) const { return m_data - static_cast<FixedPt>(i); }
+	FixedPt operator-(const U& i) const { return m_data - static_cast<FixedPt>(i); }
 	template <typename U>
-	FixedPt operator*(const U i) const { return m_data * static_cast<FixedPt>(i); }
+	FixedPt operator*(const U& i) const { return m_data * static_cast<FixedPt>(i); }
 	template <typename U>
-	FixedPt operator/(const U i) const { return m_data / static_cast<FixedPt>(i); }
+	FixedPt operator/(const U& i) const { return m_data / static_cast<FixedPt>(i); }
 	template <typename U>
-	FixedPt operator%(const U i) const { return m_data % static_cast<FixedPt>(i); }
+	FixedPt operator%(const U& i) const { return m_data % static_cast<FixedPt>(i); }
 	template <typename U>
-	FixedPt operator^(const U i) const { return m_data ^ reinterpret_cast<const int>(i); }
+	FixedPt operator^(const U& i) const { return m_data ^ static_cast<int>(i); }
 	template <typename U>
-	FixedPt operator&(const U i) const { return m_data & reinterpret_cast<const int>(i); }
+	FixedPt operator&(const U& i) const { return m_data & static_cast<int>(i); }
 	template <typename U>
-	FixedPt operator|(const U i) const { return m_data | reinterpret_cast<const int>(i); }
+	FixedPt operator|(const U& i) const { return m_data | static_cast<int>(i); }
 	template <typename U>
-	FixedPt operator<<(const U i) const { return m_data << static_cast<int>(i); }
+	FixedPt operator<<(const U& i) const { return m_data << static_cast<int>(i); }
 	template <typename U>
-	FixedPt operator>>(const U i) const { return m_data >> static_cast<int>(i); }
+	FixedPt operator>>(const U& i) const { return m_data >> static_cast<int>(i); }
 
 	// arithmetic assignment operators
 	FixedPt& operator+=(const FixedPt& pt)
@@ -218,19 +224,19 @@ public:
 	template <typename U>
 	FixedPt& operator^=(const U i)
 	{
-		m_data ^= reinterpret_cast<int>(i);
+		m_data ^= static_cast<int>(i);
 		return *this;
 	}
 	template <typename U>
 	FixedPt& operator&=(const U i)
 	{
-		m_data &= reinterpret_cast<int>(i);
+		m_data &= static_cast<int>(i);
 		return *this;
 	}
 	template <typename U>
 	FixedPt& operator|=(const U i)
 	{
-		m_data |= reinterpret_cast<int>(i);
+		m_data |= static_cast<int>(i);
 		return *this;
 	}
 	template <typename U>
@@ -291,49 +297,49 @@ public:
 
 // comparison operators
 template <typename T, typename U>
-bool operator==(U& u, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(u) == pt;}
+bool operator==(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) == pt;}
 template <typename T, typename U>
-bool operator!=(U& u, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(u) != pt;}
+bool operator!=(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) != pt;}
 template <typename T, typename U>
-bool operator<(U& u, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(u) < pt;}
+bool operator<(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) < pt;}
 template <typename T, typename U>
-bool operator>(U& u, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(u) > pt;}
+bool operator>(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) > pt;}
 template <typename T, typename U>
-bool operator<=(U& u, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(u) <= pt;}
+bool operator<=(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) <= pt;}
 template <typename T, typename U>
-bool operator>=(U& u, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(u) >= pt;}
+bool operator>=(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) >= pt;}
 
 // arithmetic operators
 template <typename T, typename U>
-U operator+(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) + pt; }
+U operator+(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) + pt; }
 template <typename T, typename U>
-U operator-(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) - pt; }
+U operator-(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) - pt; }
 template <typename T, typename U>
-U operator*(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) * pt; }
+U operator*(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) * pt; }
 template <typename T, typename U>
-U operator/(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) / pt; }
+U operator/(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) / pt; }
 template <typename T, typename U>
-U operator%(U& i, const FixedPt<T>& pt) { return static_cast<FixedPt<T>>(i) % pt; }
+U operator%(const U& i, const FixedPt<T>& pt) { return FixedPt<T>(i) % pt; }
 template <typename T, typename U>
-U operator<<(U& i, const FixedPt<T>& pt) { return i << static_cast<int>(pt); }
+U operator<<(const U& i, const FixedPt<T>& pt) { return i << static_cast<int>(pt); }
 template <typename T, typename U>
-U operator>>(U& i, const FixedPt<T>& pt) { return i >> static_cast<int>(pt); }
+U operator>>(const U& i, const FixedPt<T>& pt) { return i >> static_cast<int>(pt); }
 
 // arithmetic assignment operators
 template <typename T, typename U>
-U& operator+=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) + pt; }
+U& operator+=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(FixedPt<T>(i) + pt); }
 template <typename T, typename U>
-U& operator-=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) - pt; }
+U& operator-=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(FixedPt<T>(i) - pt); }
 template <typename T, typename U>
-U& operator*=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) * pt; }
+U& operator*=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(FixedPt<T>(i) * pt); }
 template <typename T, typename U>
-U& operator/=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) / pt; }
+U& operator/=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(FixedPt<T>(i) / pt); }
 template <typename T, typename U>
-U& operator%=(U& i, const FixedPt<T>& pt) { return i = static_cast<FixedPt<T>>(i) % pt; }
+U& operator%=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(FixedPt<T>(i) % pt); }
 template <typename T, typename U>
-U& operator<<=(U& i, const FixedPt<T>& pt) { return i = i << static_cast<int>(pt); }
+U& operator<<=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(i << static_cast<int>(pt)); }
 template <typename T, typename U>
-U& operator>>=(U& i, const FixedPt<T>& pt) { return i = i >> static_cast<int>(pt); }
+U& operator>>=(U& i, const FixedPt<T>& pt) { return i = static_cast<U>(i >> static_cast<int>(pt)); }
 
 
 typedef FixedPt<int> fixed_t;            // fixed 16.16
