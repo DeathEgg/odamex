@@ -129,15 +129,18 @@ enum GameMode_t
 // Mission packs - might be useful for TC stuff?
 enum GameMission_t
 {
-  doom, 				// DOOM 1
-  doom2,				// DOOM 2
-  pack_tnt, 			// TNT mission pack
-  pack_plut,			// Plutonia pack
-  chex,					// Chex Quest
-  retail_freedoom,
-  commercial_freedoom,	// FreeDoom
-  commercial_hacx,		// HACX
-  none
+	doom, 					// DOOM 1
+	doom2,					// DOOM 2
+	pack_tnt, 				// TNT mission pack
+	pack_plut,				// Plutonia pack
+	chex,					// Chex Quest
+	retail_freedoom,
+	commercial_freedoom,	// FreeDoom
+	commercial_hacx,		// HACX
+	heretic,				// Heretic
+	hexen,					// Hexen
+	strife,					// strife
+	none
 };
 
 // If rangecheck is undefined,

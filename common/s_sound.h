@@ -60,6 +60,12 @@ extern std::vector<sfxinfo_t> S_sfx;
 // map of every sound id for sounds that have randomized variants
 extern std::map<int, std::vector<int> > S_rnd;
 
+// sounds used in s_sound.cpp and s_sound_common.cpp
+extern int sfx_empty;
+
+// joek - hack for silent bfg
+extern int sfx_noway, sfx_oof;
+
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
 //	allocates channel buffer, sets S_sfx lookup.
@@ -165,7 +171,7 @@ void S_HashSounds();
 int S_FindSound(const char* logicalname);
 int S_FindSoundByLump(int lump);
 int S_AddSound(const char* logicalname, const char* lumpname); // Add sound by lumpname
-int S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump index
+int S_AddSoundLump(const char* logicalname, int lump);         // Add sound by lump index
 void S_AddRandomSound(int owner, std::vector<int>& list);
 void S_ClearSoundLumps();
 
