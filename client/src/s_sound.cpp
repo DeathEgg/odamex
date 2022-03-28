@@ -79,13 +79,21 @@ public:
 		loop = false;
 		start_time = 0;
 	}
+
+	void stop()
+	{
+		if (sfxinfo && handle >= 0)
+			I_StopSound(handle);
+
+		clear();
+	}
 };
 
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", "", CVARTYPE_BOOL, 0);
 
 // the set of channels available
-static channel_t *Channel;
+static std::vector<channel_t> Channel;
 
 // For ZDoom sound curve
 static byte *SoundCurve;
@@ -126,8 +134,6 @@ EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (snd_musicsystem)
 
-size_t numChannels;
-
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
@@ -149,14 +155,15 @@ void S_NoiseDebug()
 
 	fixed_t ox, oy;
 
-	for (unsigned int i = 0; ((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
+	for (unsigned int i = 0; ((i < ::Channel.size()) && (y < I_GetVideoHeight() - 16));
+	     i++, y += 8)
 	{
-		if (Channel[i].sfxinfo)
+		if (::Channel[i].sfxinfo)
 		{
 			char temp[16];
-			fixed_t *origin = Channel[i].pt;
+			fixed_t *origin = ::Channel[i].pt;
 
-			if (Channel[i].attenuation <= 0 && listenplayer().camera)
+			if (::Channel[i].attenuation <= 0 && listenplayer().camera)
 			{
 				ox = listenplayer().camera->x;
 				oy = listenplayer().camera->y;
@@ -168,24 +175,24 @@ void S_NoiseDebug()
 			}
 			else
 			{
-				ox = Channel[i].x;
-				oy = Channel[i].y;
+				ox = ::Channel[i].x;
+				oy = ::Channel[i].y;
 			}
-			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
+			const int color = ::Channel[i].loop ? CR_BROWN : CR_GREY;
+			strcpy (temp, lumpinfo[::Channel[i].sfxinfo->lumpnum].name);
 			temp[8] = 0;
 			screen->DrawText (color, 0, y, temp);
 			sprintf (temp, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
 			sprintf (temp, "%d", oy / FRACUNIT);
 			screen->DrawText (color, 120, y, temp);
-			sprintf (temp, "%.2f", Channel[i].volume);
+			sprintf (temp, "%.2f", ::Channel[i].volume);
 			screen->DrawText (color, 170, y, temp);
-			sprintf (temp, "%d", Channel[i].priority);
+			sprintf (temp, "%d", ::Channel[i].priority);
 			screen->DrawText (color, 200, y, temp);
 			sprintf (temp, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
 			screen->DrawText (color, 240, y, temp);
-			sprintf (temp, "%d", Channel[i].entchannel);
+			sprintf (temp, "%d", ::Channel[i].entchannel);
 			screen->DrawText (color, 280, y, temp);
 		}
 		else
@@ -223,11 +230,6 @@ static bool S_UseMap8Volume()
 	return false;
 }
 
-//
-// Internals.
-//
-static void S_StopChannel(unsigned int cnum);
-
 
 //
 // Initializes sound stuff, including volume
@@ -247,13 +249,12 @@ void S_Init(float sfxVolume, float musicVolume)
 
 	// Allocating the internal channels for mixing
 	// (the maximum numer of sounds rendered
-	// simultaneously) within zone memory.
-	numChannels = snd_channels.asInt();
-	Channel = (channel_t*)Z_Malloc(numChannels * sizeof(channel_t), PU_STATIC, 0);
-	for (size_t i = 0; i < numChannels; i++)
-		Channel[i].clear();
+	// simultaneously)
+	::Channel.resize(snd_channels.asInt());
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
+		it->clear();
 
-	I_SetChannels(numChannels);
+	I_SetChannels(::Channel.size());
 
 	// no sounds are playing, and they are not mus_paused
 	mus_paused = false;
@@ -265,7 +266,7 @@ void S_Init(float sfxVolume, float musicVolume)
 void S_Deinit()
 {
 	::SoundCurve = NULL;
-	::Channel = NULL;
+	::Channel.clear();
 }
 
 //
@@ -275,8 +276,7 @@ void S_Stop()
 {
 	// kill all playing sounds at start of level
 	//	(trust me - a good idea)
-	for (unsigned i = 0; i < numChannels; i++)
-		S_StopChannel(i);
+	S_StopAllChannels();
 
 	S_StopMusic();
 }
@@ -290,14 +290,13 @@ void S_Stop()
 void S_Start()
 {
 	// Kill all sound channels - but don't stop music.
-	for (unsigned i = 0; i < numChannels; i++)
-		S_StopChannel(i);
+	S_StopAllChannels();
 
 	// start new music for the level
 	mus_paused = false;
 
 	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
+	S_ChangeMusic(std::string(level.music.c_str()), true);
 }
 
 
@@ -336,11 +335,11 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
 {
 	// not a valid sound
-	if (::Channel == NULL || sfxinfo == NULL)
+	if (::Channel.empty() || sfxinfo == NULL)
 		return -1;
 
 	// Sort the sound channels by descending priority levels
-	std::sort(Channel, Channel + numChannels, S_CompareChannels);
+	std::sort(::Channel.begin(), ::Channel.end(), S_CompareChannels);
 
 	// store priority and volume in a temp channel to use with S_CompareChannels
 	channel_t tempchan;
@@ -354,23 +353,23 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 
 	// Limit the number of identical sounds playing at once
 	// tries to keep the plasma rifle from hogging all the channels
-	for (size_t i = 0, instances = 0; i < numChannels; i++)
+	for (size_t i = 0, instances = 0; i < ::Channel.size(); i++)
 	{
-		if (Channel[i].sound_id == sound_id)
+		if (::Channel[i].sound_id == sound_id)
 		{
 			if (++instances >= max_instances)
-				return S_CompareChannels(tempchan, Channel[i]) ? i : -1;
+				return S_CompareChannels(tempchan, ::Channel[i]) ? i : -1;
 		}
 	}
 
 	// try to find the first empty channel
-	for (size_t i = 0; i < numChannels; i++)
-		if (Channel[i].sfxinfo == NULL)
+	for (size_t i = 0; i < ::Channel.size(); i++)
+		if (::Channel[i].sfxinfo == NULL)
 			return i;
 
 	// Find a channel with lower priority
-	for (size_t i = numChannels - 1; i-- > 0;)
-		if (S_CompareChannels(tempchan, Channel[i]))
+	for (size_t i = ::Channel.size() - 1; i-- > 0;)
+		if (S_CompareChannels(tempchan, ::Channel[i]))
 			return i;
 
 	return -1;
@@ -652,10 +651,10 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	// joek - hack for silent bfg - stop player's weapon sounds if grunting
 	if (sfx_id == sfx_noway || sfx_id == sfx_oof)
 	{
-		for (size_t i = 0; i < numChannels; i++)
+		for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
 		{
-			if (Channel[i].sfxinfo && (Channel[i].pt == pt) && Channel[i].entchannel == CHAN_WEAPON)
-				S_StopChannel(i);
+			if (it->sfxinfo && (it->pt == pt) && it->entchannel == CHAN_WEAPON)
+				it->stop();
 		}
 	}
 
@@ -677,7 +676,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		return;
 
 	// make sure the channel isn't playing anything
-	S_StopChannel(cnum);
+	::Channel[cnum].stop();
 
 	const int handle = I_StartSound(sfx_id, volume, sep, NORM_PITCH, looping);
 
@@ -685,18 +684,18 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (handle < 0)
 		return;
 
-	Channel[cnum].handle = handle;
-	Channel[cnum].sfxinfo = sfxinfo;
-	Channel[cnum].sound_id = sfx_id;
-	Channel[cnum].pt = pt;
-	Channel[cnum].priority = priority;
-	Channel[cnum].entchannel = channel;
-	Channel[cnum].attenuation = attenuation;
-	Channel[cnum].volume = volume;
-	Channel[cnum].x = x;
-	Channel[cnum].y = y;
-	Channel[cnum].loop = looping;
-	Channel[cnum].start_time = gametic;
+	::Channel[cnum].handle = handle;
+	::Channel[cnum].sfxinfo = sfxinfo;
+	::Channel[cnum].sound_id = sfx_id;
+	::Channel[cnum].pt = pt;
+	::Channel[cnum].priority = priority;
+	::Channel[cnum].entchannel = channel;
+	::Channel[cnum].attenuation = attenuation;
+	::Channel[cnum].volume = volume;
+	::Channel[cnum].x = x;
+	::Channel[cnum].y = y;
+	::Channel[cnum].loop = looping;
+	::Channel[cnum].start_time = gametic;
 }
 
 void S_SoundID(int channel, int sound_id, float volume, int attenuation)
@@ -845,49 +844,23 @@ void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, 
 	S_StartNamedSound((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
 }
 
-
-//
-// S_StopChannel
-//
-static void S_StopChannel(unsigned int cnum)
-{
-	if (::Channel == NULL)
-		return;
-
-	if (cnum >= numChannels)
-	{
-		DPrintf("Trying to stop invalid channel %d\n", cnum);
-		return;
-	}
-
-	channel_t* c = &Channel[cnum];
-
-	if (c->sfxinfo && c->handle >= 0)
-		I_StopSound(c->handle);
-
-	c->clear();
-}
-
-
 void S_StopSound(fixed_t *pt)
 {
-	for (unsigned int i = 0; i < numChannels; i++)
-		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
-		{
-			S_StopChannel(i);
-		}
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
+		if (it->sfxinfo && (it->pt == pt))
+			it->stop();
 }
 
 void S_StopSound(fixed_t *pt, int channel)
 {
-	if (::Channel == NULL)
+	if (::Channel.empty())
 		return;
 
-	for (unsigned int i = 0; i < numChannels; i++)
-		if (Channel[i].sfxinfo
-			&& Channel[i].pt == pt // denis - fixme - security - wouldn't this cause invalid access elsewhere, if an object was destroyed?
-			&& Channel[i].entchannel == channel)
-			S_StopChannel(i);
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
+		if (it->sfxinfo
+			&& it->pt == pt // denis - fixme - security - wouldn't this cause invalid access elsewhere, if an object was destroyed?
+			&& it->entchannel == channel)
+			it->stop();
 }
 
 void S_StopSound(AActor *ent, int channel)
@@ -897,8 +870,8 @@ void S_StopSound(AActor *ent, int channel)
 
 void S_StopAllChannels()
 {
-	for (unsigned i = 0; i < numChannels; i++)
-		S_StopChannel(i);
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
+		it->stop();
 }
 
 
@@ -906,7 +879,7 @@ void S_StopAllChannels()
 // NULL, then the sound becomes a positioned sound.
 void S_RelinkSound(AActor *from, AActor *to)
 {
-	if (::Channel == NULL)
+	if (::Channel.empty())
 		return;
 
 	if (!from)
@@ -915,24 +888,23 @@ void S_RelinkSound(AActor *from, AActor *to)
 	const fixed_t *frompt = &from->x;
 	fixed_t *topt = to ? &to->x : NULL;
 
-	for (unsigned int i = 0; i < numChannels; i++)
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
 	{
-		if (Channel[i].pt == frompt)
+		if (it->pt == frompt)
 		{
-			Channel[i].pt = topt;
-			Channel[i].x = frompt[0];
-			Channel[i].y = frompt[1];
+			it->pt = topt;
+			it->x = frompt[0];
+			it->y = frompt[1];
 		}
 	}
 }
 
 bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
 {
-	for (unsigned int i = 0; i < numChannels; i++)
-	{
-		if (Channel[i].pt == pt && Channel[i].sound_id == sound_id)
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
+		if (it->pt == pt && it->sound_id == sound_id)
 			return true;
-	}
+	
 	return false;
 }
 
@@ -968,24 +940,23 @@ void S_ResumeSound()
 // joek - from choco again
 void S_UpdateSounds(void* listener_p)
 {
-	if (::Channel == NULL)
+	if (::Channel.empty())
 		return;
 
 	AActor* listener = (AActor*)listener_p;
-	for (int cnum = 0; cnum < (int)numChannels; cnum++)
+	for (std::vector<channel_t>::iterator it = ::Channel.begin(); it != ::Channel.end(); ++it)
 	{
-		const channel_t* c = &Channel[cnum];
-		const sfxinfo_t* sfx = c->sfxinfo;
+		const sfxinfo_t* sfx = it->sfxinfo;
 
-		if (c->sfxinfo)
+		if (it->sfxinfo)
 		{
-			if (I_SoundIsPlaying(c->handle))
+			if (I_SoundIsPlaying(it->handle))
 			{
 				// initialize parameters
 				int sep = NORM_SEP;
 
 				float maxvolume;
-				if (Channel[cnum].entchannel == CHAN_ANNOUNCER)
+				if (it->entchannel == CHAN_ANNOUNCER)
 					maxvolume = snd_announcervolume;
 				else
 					maxvolume = snd_sfxvolume;
@@ -994,11 +965,11 @@ void S_UpdateSounds(void* listener_p)
 
 				if (sfx->link != sfxinfo_t::NO_LINK)
 				{
-					volume += Channel[cnum].volume;
+					volume += it->volume;
 
 					if (volume <= 0)
 					{
-						S_StopChannel(cnum);
+						it->stop();
 						continue;
 					}
 					else if (volume > maxvolume)
@@ -1009,31 +980,31 @@ void S_UpdateSounds(void* listener_p)
 
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)
+				if (listener && &(listener->x) != it->pt && it->attenuation != ATTN_NONE)
 				{
 					fixed_t x, y;
-					if (c->pt) // [SL] 2011-05-29
+					if (it->pt) // [SL] 2011-05-29
 					{
-						x = c->pt[0]; // update the sound coorindates
-						y = c->pt[1]; // for moving actors
+						x = it->pt[0]; // update the sound coorindates
+						y = it->pt[1]; // for moving actors
 					}
 					else
 					{
-						x = c->x;
-						y = c->y;
+						x = it->x;
+						y = it->y;
 					}
 
 					if (AdjustSoundParams(listener, x, y, &volume, &sep))
-						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
+						I_UpdateSoundParams(it->handle, volume, sep, NORM_PITCH);
 					else
-						S_StopChannel(cnum);
+						it->stop();
 				}
 			}
 			else
 			{
 				// if channel is allocated but sound has stopped,
 				// free it
-				S_StopChannel(cnum);
+				it->stop();
 			}
 		}
 	}
