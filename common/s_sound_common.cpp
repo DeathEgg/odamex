@@ -467,10 +467,10 @@ void S_ParseSndInfo()
 						S_AddRandomSound(owner, list);
 					}
 				}
-				/*else if (os.compareTokenNoCase("registered"))
+				else if (os.compareTokenNoCase("registered"))
 				{
 				    // unnecessary Hexen SNDINFO feature; ignored
-				}*/
+				}
 				/*else if (os.compareTokenNoCase("rolloff"))
 				{
 					// todo
@@ -479,10 +479,21 @@ void S_ParseSndInfo()
 				{
 					// todo
 				}*/
-				/*else if (os.compareTokenNoCase("volume"))
+				else if (os.compareTokenNoCase("volume"))
 				{
-					// todo
-				}*/
+					os.mustScan();
+					std::string str = os.getToken();
+					const int snd = S_FindSound(str.c_str());
+
+					os.mustScanFloat();
+					if (snd == -1)
+					{
+						os.warning("Attempted to set volume of non-existent sound \"%s\"", str.c_str());
+						continue;
+					}
+					
+					S_sfx[snd].volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+				}
 				else
 				{
 					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
