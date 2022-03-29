@@ -138,8 +138,8 @@ enum GameMission_t
 	commercial_freedoom,	// FreeDoom
 	commercial_hacx,		// HACX
 	heretic,				// Heretic
-	hexen,					// Hexen
-	strife,					// strife
+	hexen,					// Hexen: Beyond Heretic
+	strife,					// Strife: Quest For the Sigil
 	none
 };
 

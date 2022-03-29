@@ -632,6 +632,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
+		volume *= sfxinfo->volume;
   		// Check to see if it is audible, and if not, modify the params
 		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
 			return;
@@ -667,6 +668,8 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	// How many instances of the same sfx can be playing concurrently
 	// Allow 3 of all sounds except announcer sfx
 	const unsigned int max_instances = (channel == CHAN_ANNOUNCER) ? 1 : 3;
+
+	volume *= sfxinfo->volume;
 
 	// try to find a channel
 	const int cnum = S_GetChannel(sfxinfo, volume, priority, max_instances);
@@ -995,7 +998,10 @@ void S_UpdateSounds(void* listener_p)
 					}
 
 					if (AdjustSoundParams(listener, x, y, &volume, &sep))
+					{
+						volume *= sfx->volume;
 						I_UpdateSoundParams(it->handle, volume, sep, NORM_PITCH);
+					}
 					else
 						it->stop();
 				}

@@ -86,7 +86,12 @@ int S_FindSound(const char *logicalname)
 	int i = S_sfx[MakeKey(logicalname) % static_cast<unsigned>(S_sfx.size() - 1)].index;
 
 	while ((i != -1) && strnicmp(S_sfx[i].name, logicalname, MAX_SNDNAME))
+	{
+		if (i == S_sfx[i].next)
+			return -1;
+
 		i = S_sfx[i].next;
+	}
 
 	return i;
 }
@@ -112,6 +117,7 @@ int S_AddSoundLump(const char *logicalname, int lump)
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
+	new_sfx.israndom = false;
 	return S_sfx.size() - 1;
 }
 
@@ -259,10 +265,10 @@ void S_ParseSndInfo()
 						os.mustScan();
 						ambient->attenuation = -1;
 					}
-					// else if (os.compareTokenNoCase("world"))
-					//{
-					// todo
-					//}
+					/*else if (os.compareTokenNoCase("world"))
+					{
+						// todo
+					}*/
 
 					if (os.compareTokenNoCase("continuous"))
 					{
@@ -483,7 +489,7 @@ void S_ParseSndInfo()
 				{
 					os.mustScan();
 					std::string str = os.getToken();
-					const int snd = S_FindSound(str.c_str());
+					const int snd = FindSoundTentative(str.c_str());
 
 					os.mustScanFloat();
 					if (snd == -1)

@@ -53,6 +53,8 @@ struct sfxinfo_struct
 	unsigned int length;      // [RH] Length of the sound in bytes
 	bool israndom;            // [DE] Whether or not this is an alias for a set of random sounds
 	float volume;			  // [DE] Sounds individual volume; maximum and default is 1.0
+
+	sfxinfo_struct() : volume(1.0) {}
 };
 
 // the complete set of sound effects
