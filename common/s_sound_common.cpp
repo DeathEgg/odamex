@@ -59,6 +59,7 @@ static struct AmbientSound
 #define CONTINUOUS 3
 #define POSITIONAL 4
 #define SURROUND 16
+#define WORLD 32
 
 std::vector<sfxinfo_t> S_sfx; // [RH] This is no longer defined in sounds.c
 std::map<int, std::vector<int>> S_rnd;
@@ -114,8 +115,6 @@ int S_AddSoundLump(const char *logicalname, int lump)
 
 	// logicalname MUST be < MAX_SNDNAME chars long
 	strcpy(new_sfx.name, logicalname);
-	new_sfx.data = NULL;
-	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
 	new_sfx.israndom = false;
 	return S_sfx.size() - 1;
@@ -251,12 +250,12 @@ void S_ParseSndInfo()
 						if (IsRealNum(os.getToken().c_str()))
 						{
 							ambient->attenuation =
-							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
+							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : ATTN_NORM;
 							os.mustScan();
 						}
 						else
 						{
-							ambient->attenuation = 1;
+							ambient->attenuation = ATTN_NORM;
 						}
 					}
 					else if (os.compareTokenNoCase("surround"))
@@ -265,10 +264,12 @@ void S_ParseSndInfo()
 						os.mustScan();
 						ambient->attenuation = -1;
 					}
-					/*else if (os.compareTokenNoCase("world"))
+					else if (os.compareTokenNoCase("world"))
 					{
-						// todo
-					}*/
+						ambient->type = WORLD;
+						os.mustScan();
+						ambient->attenuation = ATTN_NONE;
+					}
 
 					if (os.compareTokenNoCase("continuous"))
 					{
@@ -304,10 +305,16 @@ void S_ParseSndInfo()
 					os.mustScan();
 					// unnecessary Hexen SNDINFO feature; ignored
 				}
-				/*else if (os.compareTokenNoCase("attenuation"))
+				else if (os.compareTokenNoCase("attenuation"))
 				{
-					// todo
-				}*/
+					os.mustScan();
+					std::string str = os.getToken();
+					const int snd = FindSoundTentative(str.c_str());
+
+					os.mustScanFloat();
+					S_sfx[snd].attenuation =
+					    (os.getTokenFloat() > 0) ? os.getTokenFloat() : ATTN_NORM;
+				}
 				else if (os.compareTokenNoCase("edfoverride"))
 				{
 					// Eternity Engine-specific SNDINFO feature; ignored
@@ -492,12 +499,6 @@ void S_ParseSndInfo()
 					const int snd = FindSoundTentative(str.c_str());
 
 					os.mustScanFloat();
-					if (snd == -1)
-					{
-						os.warning("Attempted to set volume of non-existent sound \"%s\"", str.c_str());
-						continue;
-					}
-					
 					S_sfx[snd].volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
 				}
 				else

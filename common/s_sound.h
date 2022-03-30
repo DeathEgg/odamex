@@ -53,8 +53,9 @@ struct sfxinfo_struct
 	unsigned int length;      // [RH] Length of the sound in bytes
 	bool israndom;            // [DE] Whether or not this is an alias for a set of random sounds
 	float volume;			  // [DE] Sounds individual volume; maximum and default is 1.0
+	float attenuation;		  // [DE] how quickly sound fades out over distance; 1.0 is normal, 2.0 twice as close, 0.0 full volume
 
-	sfxinfo_struct() : volume(1.0) {}
+	sfxinfo_struct() : data(NULL), link(NO_LINK), volume(1.0f), attenuation(1.0f) {}
 };
 
 // the complete set of sound effects

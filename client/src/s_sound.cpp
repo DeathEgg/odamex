@@ -73,7 +73,7 @@ public:
 		handle = -1;
 		sound_id = -1;
 		entchannel = CHAN_VOICE;
-		attenuation = 0.0f;
+		attenuation = ATTN_NONE;
 		volume = 0.0f;
 		priority = MININT;
 		loop = false;
@@ -209,6 +209,8 @@ void S_NoiseDebug()
 // based on the current map number and the status of co_level8soundfeature
 // [ML] Now based on whether co_zdoomsound is on or it's a multiplayer not-coop game
 //
+// [DE] todo: figure out if there's a cleaner and less hacky way to do this... MAPINFO?
+//
 static bool S_UseMap8Volume()
 {
 	if (co_zdoomsound || (multiplayer && sv_gametype != GM_COOP))
@@ -329,8 +331,8 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 // Attempts to find an unused channel or a channel playing a sound with a
 // lower priority than sound about to be played.
 //
-// Returns -1 if no channels are availible.
-// Returns the number of the availible channel otherwise.
+// Returns -1 if no channels are available.
+// Returns the number of the available channel otherwise.
 //
 int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
 {
@@ -386,7 +388,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 //      might step back in range during the sound.
 //
 static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
-                                   float* vol, int* sep)
+                                   float* vol, int* sep, float atten)
 {
 	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
@@ -406,7 +408,7 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	{
 		const float attenuation = static_cast<float>(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
 		
-		*vol = snd_sfxvolume * attenuation;
+		*vol = snd_sfxvolume * attenuation * atten;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -438,7 +440,7 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 //      might step back in range during the sound.
 //
 static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
-                                  float* vol, int* sep)
+                                  float* vol, int* sep, float atten)
 {
 	static const fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
 	static const fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
@@ -468,7 +470,7 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 		if (S_UseMap8Volume() && attenuation < 0.192)
 			attenuation = 0.192;
 
-		*vol = snd_sfxvolume * attenuation;
+		*vol = snd_sfxvolume * attenuation * atten;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -490,7 +492,7 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 // S_AdjustSoundParams
 //
 static bool AdjustSoundParams(const AActor* listener, fixed_t x, fixed_t y, float* vol,
-                              int* sep)
+                              int* sep, float attenuation)
 {
 	*vol = 0.0f;
 	*sep = NORM_SEP;
@@ -499,9 +501,9 @@ static bool AdjustSoundParams(const AActor* listener, fixed_t x, fixed_t y, floa
 		return false;
 
 	if (co_zdoomsound)
-		AdjustSoundParamsZDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsZDoom(listener, x, y, vol, sep, attenuation);
 	else
-		AdjustSoundParamsDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsDoom(listener, x, y, vol, sep, attenuation);
 
 	return true;
 }
@@ -630,11 +632,13 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	int sep;
 
-	if (listenplayer().camera && attenuation != ATTN_NONE)
+	const float atten = sfxinfo->attenuation * static_cast<float>(attenuation);
+
+	if (listenplayer().camera && atten != ATTN_NONE)
 	{
 		volume *= sfxinfo->volume;
   		// Check to see if it is audible, and if not, modify the params
-		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
+		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep, atten))
 			return;
 	}
 	else
@@ -647,7 +651,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 			volume = snd_sfxvolume;
 	}
 
-	const int priority = S_CalculateSoundPriority(pt, channel, attenuation);
+	const int priority = S_CalculateSoundPriority(pt, channel, atten);
 
 	// joek - hack for silent bfg - stop player's weapon sounds if grunting
 	if (sfx_id == sfx_noway || sfx_id == sfx_oof)
@@ -693,7 +697,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	::Channel[cnum].pt = pt;
 	::Channel[cnum].priority = priority;
 	::Channel[cnum].entchannel = channel;
-	::Channel[cnum].attenuation = attenuation;
+	::Channel[cnum].attenuation = atten;
 	::Channel[cnum].volume = volume;
 	::Channel[cnum].x = x;
 	::Channel[cnum].y = y;
@@ -997,7 +1001,7 @@ void S_UpdateSounds(void* listener_p)
 						y = it->y;
 					}
 
-					if (AdjustSoundParams(listener, x, y, &volume, &sep))
+					if (AdjustSoundParams(listener, x, y, &volume, &sep, it->attenuation))
 					{
 						volume *= sfx->volume;
 						I_UpdateSoundParams(it->handle, volume, sep, NORM_PITCH);
@@ -1125,6 +1129,7 @@ static struct AmbientSound {
 #define CONTINUOUS	3
 #define POSITIONAL	4
 #define SURROUND	16
+#define WORLD		32
 
 namespace
 {
