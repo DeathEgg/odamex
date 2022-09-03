@@ -175,9 +175,6 @@ extern	int 			maxammo[NUMAMMO];
 // Internal parameters, used for engine.
 //
 
-// if true, load all graphics at level load
-extern	BOOL	 		precache;
-
 // wipegamestate can be set to -1
 //	to force a wipe on the next draw
 extern gamestate_t wipegamestate;

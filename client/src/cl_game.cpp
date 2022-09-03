@@ -200,8 +200,6 @@ BOOL 			singledemo; 			// quit after playing a demo from cmdline
 int				demostartgametic;
 FILE*			recorddemo_fp;
 
-BOOL 			precache = true;		// if true, load all graphics at start
-
 wbstartstruct_t wminfo; 				// parms for world map / intermission
 
 #define MAXPLMOVE				(forwardmove[1])
