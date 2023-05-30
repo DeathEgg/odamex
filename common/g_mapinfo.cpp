@@ -1936,16 +1936,10 @@ struct MapInfoDataSetter<automap_dummy>
 } // namespace
 
 
-
-
-
-
-
-
 //
 // OScanner has no default constructor. Must initialize with function.
 //
-OScanner OMapInfoParser::constructOScanner(int lump, const char* lumpname)
+OScanner ZMapInfoParser::constructOScanner(int lump, const char* lumpname)
 {
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
@@ -1957,16 +1951,92 @@ OScanner OMapInfoParser::constructOScanner(int lump, const char* lumpname)
 	return OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 }
 
-void OMapInfoParser::parseMapInfo()
+//
+// Parses an open brace, depending on the MAPINFO format. If we haven't determined
+// the format of the MAPINFO file yet,figure it out.
+//
+void ZMapInfoParser::parseOpenBrace()
 {
-	level_pwad_info_t defaultinfo;
+	switch (formattype)
+	{
+	default:
+		os.mustScan();
+		formattype = os.compareToken("{") ? MIFormat_ZDoom : MIFormat_Hexen;
+		break;
+	case MIFormat_Hexen:
+		break;
+	case MIFormat_ZDoom:
+		os.mustScan();
+		os.assertTokenIs("{");
+		// ZDoom sets C-style comments on here. OScanner doesn't work this way,
+		// so C-style comments are always on. Not like people should be using
+		// old MAPINFO anyway these days...
+		break;
+	}
+}
+
+//
+// Parses a close brace, depending on the MAPINFO format.
+//
+bool ZMapInfoParser::parseCloseBrace()
+{
+	if (formattype == MIFormat_ZDoom)
+	{
+		return os.compareToken("}");
+	}
+	else
+	{
+		os.unScan();
+		return true;
+	}
+}
+
+//
+//
+//
+void ZMapInfoParser::parseMapDefinition(level_pwad_info_t& leveldef)
+{
+	parseOpenBrace();
 
 	while (os.scan())
 	{
-		if (os.compareTokenNoCase("defaultmap"))
-		{
-			defaultinfo = level_pwad_info_t();
+		
+	}
+}
 
+
+//
+// Parses a MAPINFO file.
+//
+void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
+                                  level_pwad_info_t& defaultinfo)
+{
+	defaultinfo = gamedefaults;
+
+	while (os.scan())
+	{
+		if (os.compareTokenNoCase("include"))
+		{
+			// Not implemented
+			MustGet<OLumpName>(os);
+		}
+		else if (os.compareTokenNoCase("gamedefaults"))
+		{
+			gamedefaults = level_pwad_info_t();
+
+			MapInfoDataSetter<level_pwad_info_t> defaultsetter(gamedefaults);
+			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+			defaultinfo = gamedefaults;
+		}
+		else if (os.compareTokenNoCase("defaultmap"))
+		{
+			defaultinfo = gamedefaults;
+
+			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
+			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+		}
+		else if (os.compareTokenNoCase("adddefaultmap"))
+		{
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
 		}
@@ -2112,7 +2182,6 @@ void OMapInfoParser::parseMapInfo()
 }
 
 
-
 //
 // G_ParseMapInfo
 // Parses the MAPINFO lumps of all loaded WADs and generates
@@ -2122,14 +2191,15 @@ void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
 	int lump;
+	
+	level_pwad_info_t gamedefaults;
 
-	// Reset skill definitions
-	skillnum = 0;
-
+	// Parse the IWAD MapInfo file first.
 	//if (gamemission != heretic)
 	{
-		OMapInfoParser parser(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
-		parser.parseMapInfo();
+		level_pwad_info_t defaultinfo;
+		ZMapInfoParser parser(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+		parser.parseMapInfo(gamedefaults, defaultinfo);
 	}
 
 	switch (gamemission)
@@ -2145,8 +2215,9 @@ void G_ParseMapInfo()
 		if (gamemode == commercial_bfg)
 		{
 			lump = W_GetNumForName(baseinfoname);
-			OMapInfoParser parser(lump, baseinfoname);
-			parser.parseMapInfo();
+			level_pwad_info_t defaultinfo;
+			ZMapInfoParser parser(lump, baseinfoname);
+			parser.parseMapInfo(gamedefaults, defaultinfo);
 			baseinfoname = "_BFGNFO";
 		}
 		break;
@@ -2167,8 +2238,9 @@ void G_ParseMapInfo()
 
 	lump = W_GetNumForName(baseinfoname);
 	{
-		OMapInfoParser parser(lump, baseinfoname);
-		parser.parseMapInfo();
+		level_pwad_info_t defaultinfo;
+		ZMapInfoParser parser(lump, baseinfoname);
+		parser.parseMapInfo(gamedefaults, defaultinfo);
 	}
 
 	bool found_mapinfo = false;
@@ -2186,8 +2258,9 @@ void G_ParseMapInfo()
 	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
-		OMapInfoParser parser(lump, "MAPINFO");
-		parser.parseMapInfo();
+		level_pwad_info_t defaultinfo;
+		ZMapInfoParser parser(lump, "MAPINFO");
+		parser.parseMapInfo(gamedefaults, defaultinfo);
 	}
 
 	if (episodenum == 0)
