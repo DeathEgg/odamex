@@ -21,6 +21,7 @@
 
 #include "odamex.h"
 
+#include "g_mapinfo.h"
 #include "g_episode.h"
 #include "gi.h"
 #include "gstrings.h"
@@ -39,6 +40,12 @@ BOOL HexenHack;
 
 namespace
 {
+#define DEFINE_MAP_OPTION(name, old)                                             \
+	static void MapOptHandler_##name(FMapInfoParser& parse, level_info_t* info); \
+	static FMapOptInfo MapOpt_##name = {#name, MapOptHandler_##name, old};       \
+	FMapOptInfo* mapopt_##name = &MapOpt_##name;                                 \
+	static void MapOptHandler_##name(FMapInfoParser& parse, level_info_t* info)
+
 
 //
 // Assumes that you have munched the last parameter you know how to handle,
@@ -1926,14 +1933,20 @@ struct MapInfoDataSetter<automap_dummy>
 		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
 	}
 };
+} // namespace
 
-void ParseMapInfoLump(int lump, const char* lumpname)
+
+
+
+
+
+
+
+//
+// OScanner has no default constructor. Must initialize with function.
+//
+OScanner OMapInfoParser::constructOScanner(int lump, const char* lumpname)
 {
-	LevelInfos& levels = getLevelInfos();
-	ClusterInfos& clusters = getClusterInfos();
-
-	level_pwad_info_t defaultinfo;
-
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	const OScannerConfig config = {
@@ -1941,7 +1954,12 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	    true,     // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	return OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+}
+
+void OMapInfoParser::parseMapInfo()
+{
+	level_pwad_info_t defaultinfo;
 
 	while (os.scan())
 	{
@@ -1975,6 +1993,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			}
 
 			// Find the level.
+			LevelInfos& levels = getLevelInfos();
 			level_pwad_info_t& info = (levels.findByName(map_name).exists())
 			                              ? levels.findByName(map_name)
 			                              : levels.create();
@@ -2009,15 +2028,15 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				MapNameToLevelNum(info);
 			}
 		}
-		else if (os.compareTokenNoCase("cluster") ||
-		         os.compareTokenNoCase("clusterdef"))
+		else if (os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef"))
 		{
 			os.mustScanInt();
 
 			// Find the cluster.
+			ClusterInfos& clusters = getClusterInfos();
 			cluster_info_t& info = (clusters.findByCluster(os.getTokenInt()).cluster != 0)
-			        ? clusters.findByCluster(os.getTokenInt())
-			        : clusters.create();
+			                           ? clusters.findByCluster(os.getTokenInt())
+			                           : clusters.create();
 
 			info.cluster = os.getTokenInt();
 
@@ -2041,7 +2060,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 
 			if (skillnum < MAX_SKILLS)
 			{
-				SkillInfo &info = SkillInfos[skillnum];
+				SkillInfo& info = SkillInfos[skillnum];
 				info = SkillInfo();
 
 				info.name = os.getToken();
@@ -2091,7 +2110,8 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		}
 	}
 }
-} // namespace
+
+
 
 //
 // G_ParseMapInfo
@@ -2108,7 +2128,8 @@ void G_ParseMapInfo()
 
 	//if (gamemission != heretic)
 	{
-		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+		OMapInfoParser parser(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+		parser.parseMapInfo();
 	}
 
 	switch (gamemission)
@@ -2124,7 +2145,8 @@ void G_ParseMapInfo()
 		if (gamemode == commercial_bfg)
 		{
 			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
+			OMapInfoParser parser(lump, baseinfoname);
+			parser.parseMapInfo();
 			baseinfoname = "_BFGNFO";
 		}
 		break;
@@ -2144,7 +2166,10 @@ void G_ParseMapInfo()
 	}
 
 	lump = W_GetNumForName(baseinfoname);
-	ParseMapInfoLump(lump, baseinfoname);
+	{
+		OMapInfoParser parser(lump, baseinfoname);
+		parser.parseMapInfo();
+	}
 
 	bool found_mapinfo = false;
 	lump = -1;
@@ -2161,7 +2186,8 @@ void G_ParseMapInfo()
 	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
-		ParseMapInfoLump(lump, "MAPINFO");
+		OMapInfoParser parser(lump, "MAPINFO");
+		parser.parseMapInfo();
 	}
 
 	if (episodenum == 0)
@@ -2175,3 +2201,5 @@ void G_ParseMapInfo()
 		I_FatalError("%s: You cannot use clearskills in a MAPINFO if you do not define any "
 					"new skills after it.", __FUNCTION__);
 }
+
+

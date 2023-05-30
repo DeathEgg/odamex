@@ -19,7 +19,21 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include "oscanner.h"
 
 extern BOOL HexenHack; // Semi-Hexen-compatibility mode
+
+struct OMapInfoParser
+{
+	OMapInfoParser(int lump, const char* lumpname)
+	    : os(constructOScanner(lump, lumpname))
+	{
+	}
+
+	OScanner os;
+
+	OScanner constructOScanner(int lump, const char* lumpname);
+	void parseMapInfo();
+};
 
 void G_ParseMapInfo();
