@@ -1510,10 +1510,6 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
 		ENTRY3("par", &MIType_Int, &ref.partime)
 		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
-		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
-		ENTRY4("nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING)
-		ENTRY4("allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-		       LEVEL_MONSTERSTELEFRAG)
 		ENTRY3("map07special", &MIType_Map07Special, &ref.bossactions)
 		ENTRY3("baronspecial", &MIType_BaronSpecial, &ref.bossactions)
 		ENTRY3("cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions)
@@ -1521,24 +1517,9 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions)
 		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions)
 		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
-		ENTRY1("lightning")
 		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
 		ENTRY4("evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING)
-		ENTRY4("noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL)
-		ENTRY4("forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH)
-		ENTRY5("allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-		       ~LEVEL_FREELOOK_NO)
-		ENTRY5("nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-		       ~LEVEL_FREELOOK_YES)
-		ENTRY5("allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO)
-		ENTRY5("nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES)
 		ENTRY2("cdtrack", &MIType_EatNext)
-		ENTRY2("cd_start_track", &MIType_EatNext)
-		ENTRY2("cd_end1_track", &MIType_EatNext)
-		ENTRY2("cd_end2_track", &MIType_EatNext)
-		ENTRY2("cd_end3_track", &MIType_EatNext)
-		ENTRY2("cd_intermission_track", &MIType_EatNext)
-		ENTRY2("cd_title_track", &MIType_EatNext)
 		ENTRY2("warptrans", &MIType_EatNext)
 		ENTRY3("gravity", &MIType_Float, &ref.gravity)
 		ENTRY3("aircontrol", &MIType_Float, &ref.aircontrol)
@@ -2036,8 +2017,34 @@ struct MapInfoFlagHandler
 }
 MapFlagHandlers[] =
 {
-    {"nointermission", MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0},
-    {"intermission", MITYPE_CLRFLAG, LEVEL_NOINTERMISSION, 0},
+    {"nointermission",					MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0},
+    {"intermission",					MITYPE_CLRFLAG, LEVEL_NOINTERMISSION, 0},
+    {"doublesky",						MITYPE_SETFLAG, LEVEL_DOUBLESKY, 0},
+    {"nosoundclipping",					MITYPE_SETFLAG, LEVEL_NOSOUNDCLIPPING, 0},
+    {"allowmonstertelefrags",			MITYPE_SETFLAG, LEVEL_MONSTERSTELEFRAG, 0},
+	//{ "map07special",					MITYPE_SETFLAG,	LEVEL_MAP07SPECIAL, 0 },
+	//{ "baronspecial",					MITYPE_SETFLAG,	LEVEL_BRUISERSPECIAL, 0 },
+	//{ "cyberdemonspecial",			MITYPE_SETFLAG,	LEVEL_CYBORGSPECIAL, 0 },
+	//{ "spidermastermindspecial",		MITYPE_SETFLAG,	LEVEL_SPIDERSPECIAL, 0 },
+	//{ "specialaction_exitlevel",		MITYPE_SCFLAGS,	0, ~LEVEL_SPECACTIONSMASK },
+	//{ "specialaction_opendoor",		MITYPE_SCFLAGS,	LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
+	//{ "specialaction_lowerfloor",		MITYPE_SCFLAGS,	LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
+	{ "lightning",						MITYPE_SETFLAG,	LEVEL_STARTLIGHTNING, 0 },
+	{ "noautosequences",				MITYPE_SETFLAG,	LEVEL_SNDSEQTOTALCTRL, 0 },
+	{ "autosequences",					MITYPE_CLRFLAG,	LEVEL_SNDSEQTOTALCTRL, 0 },
+	{ "forcenoskystretch",				MITYPE_SETFLAG,	LEVEL_FORCENOSKYSTRETCH, 0 },
+	{ "skystretch",						MITYPE_CLRFLAG,	LEVEL_FORCENOSKYSTRETCH, 0 },
+	{ "allowfreelook",					MITYPE_SCFLAGS,	LEVEL_FREELOOK_YES, ~LEVEL_FREELOOK_NO },
+	{ "nofreelook",						MITYPE_SCFLAGS,	LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
+	{ "allowjump",						MITYPE_SCFLAGS,	LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
+	{ "nojump",							MITYPE_SCFLAGS,	LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+	{ "cd_start_track",					MITYPE_EATNEXT,	0, 0 },
+	{ "cd_end1_track",					MITYPE_EATNEXT,	0, 0 },
+	{ "cd_end2_track",					MITYPE_EATNEXT,	0, 0 },
+	{ "cd_end3_track",					MITYPE_EATNEXT,	0, 0 },
+	{ "cd_intermission_track",			MITYPE_EATNEXT,	0, 0 },
+	{ "cd_title_track",					MITYPE_EATNEXT,	0, 0 },
+	{ NULL,								MITYPE_IGNORE, 0, 0}
 };
 const int MapFlagHandlersSize = sizeof(MapFlagHandlers) / sizeof(MapInfoFlagHandler);
 
