@@ -1510,7 +1510,6 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
 		ENTRY3("par", &MIType_Int, &ref.partime)
 		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
-		ENTRY4("nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION)
 		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
 		ENTRY4("nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING)
 		ENTRY4("allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
@@ -1951,6 +1950,7 @@ OScanner ZMapInfoParser::constructOScanner(int lump, const char* lumpname)
 	return OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 }
 
+
 //
 // Parses an open brace, depending on the MAPINFO format. If we haven't determined
 // the format of the MAPINFO file yet,figure it out.
@@ -1961,11 +1961,11 @@ void ZMapInfoParser::parseOpenBrace()
 	{
 	default:
 		os.mustScan();
-		formattype = os.compareToken("{") ? MIFormat_ZDoom : MIFormat_Hexen;
+		formattype = os.compareToken("{") ? MIF_ZDOOM : MIF_HEXEN;
 		break;
-	case MIFormat_Hexen:
+	case MIF_HEXEN:
 		break;
-	case MIFormat_ZDoom:
+	case MIF_ZDOOM:
 		os.mustScan();
 		os.assertTokenIs("{");
 		// ZDoom sets C-style comments on here. OScanner doesn't work this way,
@@ -1975,12 +1975,13 @@ void ZMapInfoParser::parseOpenBrace()
 	}
 }
 
+
 //
 // Parses a close brace, depending on the MAPINFO format.
 //
 bool ZMapInfoParser::parseCloseBrace()
 {
-	if (formattype == MIFormat_ZDoom)
+	if (formattype == MIF_ZDOOM)
 	{
 		return os.compareToken("}");
 	}
@@ -1991,16 +1992,158 @@ bool ZMapInfoParser::parseCloseBrace()
 	}
 }
 
+
 //
+// Checks if we read an assignment operator, depending on the MAPINFO format.
 //
+bool ZMapInfoParser::checkAssign()
+{
+	if (formattype == MIF_ZDOOM)
+		return os.compareToken("=");
+	else
+		return false;
+}
+
+
 //
-void ZMapInfoParser::parseMapDefinition(level_pwad_info_t& leveldef)
+// Parses an assignment operator, depending on the MAPINFO format.
+//
+void ZMapInfoParser::parseAssign()
+{
+	if (formattype == MIF_ZDOOM)
+	{
+		os.mustScan();
+		os.assertTokenIs("=");
+	}
+}
+
+
+enum MIType
+{
+	MITYPE_IGNORE,
+	MITYPE_EATNEXT,
+	MITYPE_SETFLAG,
+	MITYPE_CLRFLAG,
+	MITYPE_SCFLAGS,
+};
+
+
+struct MapInfoFlagHandler
+{
+	const char* name;
+	MIType type;
+	uint32_t data1, data2;
+}
+MapFlagHandlers[] =
+{
+    {"nointermission", MITYPE_SETFLAG, LEVEL_NOINTERMISSION, 0},
+    {"intermission", MITYPE_CLRFLAG, LEVEL_NOINTERMISSION, 0},
+};
+const int MapFlagHandlersSize = sizeof(MapFlagHandlers) / sizeof(MapInfoFlagHandler);
+
+//
+// Parses the body of a map definition.
+//
+void ZMapInfoParser::parseMapDefinition(level_pwad_info_t& info)
 {
 	parseOpenBrace();
 
 	while (os.scan())
 	{
-		
+		// Check if the MAPINFO token is a flag.
+		MapInfoFlagHandler* handler = NULL;
+
+		for (int i = 0; i < MapFlagHandlersSize; ++i)
+		{
+			if (os.compareTokenNoCase(MapFlagHandlers[i].name))
+			{
+				handler = &MapFlagHandlers[i];
+				if (handler)
+				{
+					switch (handler->type)
+					{
+					case MITYPE_EATNEXT:
+						parseAssign();
+						os.mustScan();
+						break;
+
+					case MITYPE_IGNORE:
+						break;
+
+					case MITYPE_SETFLAG:
+						if (!checkAssign())
+						{
+							info.flags |= handler->data1;
+						}
+						else
+						{
+							os.mustScanInt();
+							int num = os.getTokenInt();
+							if (num)
+								info.flags |= handler->data1;
+							else
+								info.flags &= ~handler->data1;
+						}
+						info.flags |= handler->data2;
+						break;
+
+					case MITYPE_CLRFLAG:
+						info.flags &= ~handler->data1;
+						info.flags |= handler->data2;
+						break;
+
+					case MITYPE_SCFLAGS:
+						info.flags = (info.flags & handler->data2) | handler->data1;
+						break;
+
+					default:
+						I_Error(__FUNCTION__ ": Impossible flag type detected during "
+						                     "MAPINFO reading.");
+						break;
+					}
+				}
+				break;
+			}
+		}
+
+		// Is not a flag.
+		if (handler == NULL)
+		{
+			MapInfoDataSetter<level_pwad_info_t> setter(info);
+			MapInfoDataContainer& mapInfoDataContainer = setter.mapInfoDataContainer;
+
+			// find the matching string and use its corresponding function
+			MapInfoDataContainer::iterator it = mapInfoDataContainer.begin();
+			for (; it != mapInfoDataContainer.end(); ++it)
+			{
+				if (os.compareTokenNoCase(it->name))
+				{
+					if (it->fn)
+					{
+						it->fn(os, true, it->data, it->flags, it->flags2);
+					}
+
+					// [AM] Some tokens are no-ops, we want to break out either way.
+					break;
+				}
+			}
+
+			if (it == mapInfoDataContainer.end())
+			{
+				if (!parseCloseBrace())
+				{
+					// New MAPINFO is capable of skipping past unknown
+					// types.
+					os.warning("Unknown property '%s' found in map definition",
+					           os.getToken().c_str());
+					SkipUnknownType(os);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -2024,21 +2167,17 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 		{
 			gamedefaults = level_pwad_info_t();
 
-			MapInfoDataSetter<level_pwad_info_t> defaultsetter(gamedefaults);
-			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+			parseMapDefinition(gamedefaults);
 			defaultinfo = gamedefaults;
 		}
 		else if (os.compareTokenNoCase("defaultmap"))
 		{
 			defaultinfo = gamedefaults;
-
-			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
-			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+			parseMapDefinition(defaultinfo);
 		}
 		else if (os.compareTokenNoCase("adddefaultmap"))
 		{
-			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
-			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+			parseMapDefinition(defaultinfo);
 		}
 		else if (os.compareTokenNoCase("map"))
 		{
@@ -2088,8 +2227,7 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 				info.level_name = os.getToken();
 			}
 
-			MapInfoDataSetter<level_pwad_info_t> setter(info);
-			ParseMapInfoLower<level_pwad_info_t>(os, setter);
+			parseMapDefinition(info);
 
 			// If the level info was parsed and no levelnum was applied,
 			// try and synthesize one from the level name.
@@ -2264,15 +2402,15 @@ void G_ParseMapInfo()
 	}
 
 	if (episodenum == 0)
-		I_FatalError("%s: You cannot use clearepisodes in a MAPINFO if you do not define any "
-		             "new episodes after it.", __FUNCTION__);
+		I_FatalError(__FUNCTION__  ": You cannot use clearepisodes in a MAPINFO if you do "
+		             "not define any new episodes after it.");
 
 	if (defaultskillmenu > skillnum - 1)
 		defaultskillmenu = skillnum - 1;
 
 	if (skillnum == 0)
-		I_FatalError("%s: You cannot use clearskills in a MAPINFO if you do not define any "
-					"new skills after it.", __FUNCTION__);
+		I_FatalError(__FUNCTION__  ": You cannot use clearskills in a MAPINFO if you do "
+		             "not define any new skills after it.");
 }
 
 

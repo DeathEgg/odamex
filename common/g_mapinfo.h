@@ -25,11 +25,11 @@ extern BOOL HexenHack; // Semi-Hexen-compatibility mode
 
 struct ZMapInfoParser
 {
-	enum MapInfoFormatType
+	enum MapInfoFormat
 	{
-		MIFormat_Unknown,
-		MIFormat_Hexen,
-		MIFormat_ZDoom,
+		MIF_UNKNOWN,
+		MIF_HEXEN,
+		MIF_ZDOOM,
 	} formattype;
 
 	ZMapInfoParser(int lump, const char* lumpname)
@@ -43,6 +43,8 @@ struct ZMapInfoParser
 
 	void parseOpenBrace();
 	bool parseCloseBrace();
+	bool checkAssign();
+	void parseAssign();
 
 	void parseMapDefinition(level_pwad_info_t& leveldef);
 	void parseMapInfo(level_pwad_info_t& gamedefaults, level_pwad_info_t& defaultinfo);
