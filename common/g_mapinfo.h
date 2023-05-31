@@ -46,8 +46,10 @@ struct ZMapInfoParser
 	bool checkAssign();
 	void parseAssign();
 
-	void parseMapDefinition(level_pwad_info_t& leveldef);
+	void parseMapDefinition(level_pwad_info_t& info);
 	void parseMapInfo(level_pwad_info_t& gamedefaults, level_pwad_info_t& defaultinfo);
+
+	void parseAMColors(bool overlay);
 };
 
 void G_ParseMapInfo();

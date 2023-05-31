@@ -1046,13 +1046,6 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 	}
 }
 
-// Sets an SC flag
-void MIType_SCFlags(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                    unsigned int flags2)
-{
-	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
-}
-
 // Sets a cluster
 void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
                     unsigned int flags2)
@@ -1518,13 +1511,10 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions)
 		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
 		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
-		ENTRY4("evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING)
 		ENTRY2("cdtrack", &MIType_EatNext)
 		ENTRY2("warptrans", &MIType_EatNext)
 		ENTRY3("gravity", &MIType_Float, &ref.gravity)
 		ENTRY3("aircontrol", &MIType_Float, &ref.aircontrol)
-		ENTRY4("islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL)
-		ENTRY4("lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL)
 		ENTRY1("nocrouch")
 		ENTRY2("intermusic", &MIType_EatNext)
 		ENTRY3("par", &MIType_Int, &ref.partime)
@@ -1889,7 +1879,6 @@ struct MapInfoDataSetter<automap_dummy>
 	MapInfoDataSetter()
 	{
 		ENTRY2("base", &MIType_AutomapBase)
-		ENTRY3("showlocks", &MIType_Bool, &gameinfo.showLocks)
 		ENTRY3("background", &MIType_String, &gameinfo.defaultAutomapColors.Background)
 		ENTRY3("yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor)
 		ENTRY3("wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor)
@@ -2038,13 +2027,15 @@ MapFlagHandlers[] =
 	{ "nofreelook",						MITYPE_SCFLAGS,	LEVEL_FREELOOK_NO, ~LEVEL_FREELOOK_YES },
 	{ "allowjump",						MITYPE_SCFLAGS,	LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
 	{ "nojump",							MITYPE_SCFLAGS,	LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+	{ "evenlighting",					MITYPE_SETFLAG,	LEVEL_EVENLIGHTING, 0 },
+	{ "islobby",						MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0 },
+	{ "lobby",							MITYPE_SETFLAG,	LEVEL_LOBBYSPECIAL, 0 },
 	{ "cd_start_track",					MITYPE_EATNEXT,	0, 0 },
 	{ "cd_end1_track",					MITYPE_EATNEXT,	0, 0 },
 	{ "cd_end2_track",					MITYPE_EATNEXT,	0, 0 },
 	{ "cd_end3_track",					MITYPE_EATNEXT,	0, 0 },
 	{ "cd_intermission_track",			MITYPE_EATNEXT,	0, 0 },
 	{ "cd_title_track",					MITYPE_EATNEXT,	0, 0 },
-	{ NULL,								MITYPE_IGNORE, 0, 0}
 };
 const int MapFlagHandlersSize = sizeof(MapFlagHandlers) / sizeof(MapInfoFlagHandler);
 
@@ -2310,8 +2301,16 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 		}
 		else if (os.compareTokenNoCase("automap"))
 		{
-			MapInfoDataSetter<automap_dummy> setter;
-			ParseMapInfoLower<automap_dummy>(os, setter);
+			if (formattype != MIF_HEXEN)
+			{
+				formattype = MIF_ZDOOM;
+				parseAMColors(os.compareTokenNoCase("automap_overlay"));
+			}
+			else
+			{
+				os.error("Automap colorset definitions are not supported with old "
+				         "MAPINFO syntax");
+			}
 		}
 		else if (os.compareTokenNoCase("automap_overlay"))
 		{
@@ -2321,7 +2320,7 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 		}
 		else
 		{
-			os.error("Unimplemented top-level type \"%s\"", os.getToken().c_str());
+			os.error("Unimplemented or unknown top-level type \"%s\"", os.getToken().c_str());
 		}
 	}
 }

@@ -85,7 +85,6 @@ typedef struct
 	// automap features
 	am_default_colors_t defaultAutomapColors;
 	am_colors_t currentAutomapColors;
-	bool showLocks; // not implemented
 	std::vector<mline_t> mapArrow;
 	std::vector<mline_t> mapArrowCheat;
 	std::vector<mline_t> cheatKey;

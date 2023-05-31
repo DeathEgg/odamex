@@ -53,6 +53,7 @@
 #include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
+#include "g_mapinfo.h"
 
 argb_t CL_GetPlayerColor(player_t*);
 
@@ -237,6 +238,8 @@ static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
 static bool stopped = true;
+
+static bool showLocks = false; // not implemented
 
 extern NetDemo netdemo;
 
@@ -500,6 +503,39 @@ void AM_initVariables()
 	ST_Responder(&st_notify);
 }
 
+//
+// Colors
+//
+
+static const char *ColorNames[] = {
+		"Background",
+		"YourColor",
+		"WallColor",
+		"TwoSidedWallColor",
+		"FloorDiffWallColor",
+		"CeilingDiffWallColor",
+		"ExtraFloorWallColor", // Not implemented
+		"ThingColor",
+		"ThingColor_Item",
+		"ThingColor_CountItem",
+		"ThingColor_Monster",
+		"ThingColor_NocountMonster",
+		"ThingColor_Friend",
+		"SpecialWallColor", // Not implemented
+		"SecretWallColor",
+		"GridColor",
+		"XHairColor",
+		"NotSeenColor",
+		"LockedColor",
+		"IntraTeleportColor",
+		"InterTeleportColor", // Not implemented
+		"SecretSectorColor", // Not implemented
+		"UnexploredSecretColor",
+		"PortalColor", // Not implemented
+		"AlmostBackgroundColor",
+		NULL
+};
+
 am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
 {
 	am_color_t c;
@@ -693,6 +729,111 @@ void AM_initColors(const bool overlayed)
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor.c_str());
 	}
 }
+
+
+bool IsIdentifier(const OScanner& os)
+{
+	// [A-Za-z_]+[A-Za-z0-9_]*
+
+	if (os.getToken().empty())
+		return false;
+
+	const std::string token = os.getToken();
+	for (std::string::const_iterator it = token.begin(); it != token.end(); ++it)
+	{
+		const char& ch = *it;
+		if (ch == '_')
+			continue;
+
+		if (ch >= 'A' && ch <= 'Z')
+			continue;
+
+		if (ch >= 'a' && ch <= 'z')
+			continue;
+
+		if (it != token.begin() && ch >= '0' && ch <= '9')
+			continue;
+
+		return false;
+	}
+
+	return true;
+}
+
+
+//
+//
+//
+void ZMapInfoParser::parseAMColors(bool overlay)
+{
+	bool colorset = false;
+
+	// todo - determine color set
+
+	// todo - set to white
+	// todo - set defined?
+	os.mustScan();
+	os.assertTokenIs("{");
+	while (os.scan())
+	{
+		if (os.compareToken("}"))
+			return;
+
+		if (!IsIdentifier(os)) // todo: replace with OScanner function
+		{
+			os.error("Expected identifier (unexpected end of file).");
+		}
+		std::string key = os.getToken();
+		os.mustScan();
+		os.assertTokenIs("=");
+
+		if (iequals(key, "base"))
+		{
+			if (colorset)
+				os.error("'base' must be specified before the first color");
+
+			os.mustScan();
+
+			if (os.compareTokenNoCase("doom"))
+				AM_SetBaseColorDoom();
+			else if (os.compareTokenNoCase("raven"))
+				AM_SetBaseColorRaven();
+			else if (os.compareTokenNoCase("strife"))
+				AM_SetBaseColorStrife();
+			else
+				os.warning("'base' expected \"doom\", \"heretic\", or \"strife\"; got %s",
+				           os.getToken().c_str());
+		}
+		else if (iequals(key, "showlocks"))
+		{
+			os.mustScanBool();
+			showLocks = os.getTokenBool();
+		}
+		else
+		{
+			int i;
+			for (i = 0; ColorNames[i] != NULL; ++i)
+			{
+				if (iequals(key, ColorNames[i]))
+				{
+					os.mustScan();
+					std::string color = os.getToken();
+
+					argb_t colorval = V_GetColorFromString(color);
+					// todo: set color
+					colorset = true;
+					break;
+				}
+			}
+
+			if (ColorNames[i] == NULL)
+			{
+				os.error("Unknown automap color key '%s'", key.c_str());
+			}
+		}
+	}
+}
+
 
 //
 //
