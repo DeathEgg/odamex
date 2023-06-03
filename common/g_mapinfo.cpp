@@ -1314,22 +1314,6 @@ void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_AutomapBase(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                        unsigned int flags2)
-{
-	ParseMapInfoHelper<std::string>(os, doEquals);
-
-	if (os.compareTokenNoCase("doom"))
-		AM_SetBaseColorDoom();
-	else if (os.compareTokenNoCase("raven"))
-		AM_SetBaseColorRaven();
-	else if (os.compareTokenNoCase("strife"))
-		AM_SetBaseColorStrife();
-	else
-		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken().c_str());
-}
-
-//
 bool ScanAndCompareString(OScanner& os, std::string cmp)
 {
 	os.scan();
@@ -1867,41 +1851,6 @@ struct MapInfoDataSetter<SkillInfo>
 		ENTRY4("playerrespawn", &MIType_Bool, &ref.player_respawn, true)
 	}
 };
-
-struct automap_dummy {};
-
-// Automap
-template <>
-struct MapInfoDataSetter<automap_dummy>
-{
-	MapInfoDataContainer mapInfoDataContainer;
-
-	MapInfoDataSetter()
-	{
-		ENTRY2("base", &MIType_AutomapBase)
-		ENTRY3("background", &MIType_String, &gameinfo.defaultAutomapColors.Background)
-		ENTRY3("yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor)
-		ENTRY3("wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor)
-		ENTRY3("twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor)
-		ENTRY3("floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor)
-		ENTRY3("ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor)
-		ENTRY3("thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor)
-		ENTRY3("thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item)
-		ENTRY3("thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem)
-		ENTRY3("thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster)
-		ENTRY3("thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster)
-		ENTRY3("thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend)
-		ENTRY3("thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile)
-		ENTRY3("secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor)
-		ENTRY3("gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor)
-		ENTRY3("xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor)
-		ENTRY3("notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor)
-		ENTRY3("lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor)
-		ENTRY3("almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground)
-		ENTRY3("intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor)
-		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
-	}
-};
 } // namespace
 
 
@@ -2304,7 +2253,7 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 			if (formattype != MIF_HEXEN)
 			{
 				formattype = MIF_ZDOOM;
-				parseAMColors(os.compareTokenNoCase("automap_overlay"));
+				parseAutomap(os.compareTokenNoCase("automap_overlay"));
 			}
 			else
 			{
@@ -2418,5 +2367,3 @@ void G_ParseMapInfo()
 		I_FatalError(__FUNCTION__  ": You cannot use clearskills in a MAPINFO if you do "
 		             "not define any new skills after it.");
 }
-
-
