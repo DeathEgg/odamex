@@ -2248,7 +2248,8 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
 		}
-		else if (os.compareTokenNoCase("automap"))
+		else if (os.compareTokenNoCase("automap") ||
+		         os.compareTokenNoCase("automap_overlay"))
 		{
 			if (formattype != MIF_HEXEN)
 			{
@@ -2260,12 +2261,6 @@ void ZMapInfoParser::parseMapInfo(level_pwad_info_t& gamedefaults,
 				os.error("Automap colorset definitions are not supported with old "
 				         "MAPINFO syntax");
 			}
-		}
-		else if (os.compareTokenNoCase("automap_overlay"))
-		{
-			// Not implemented
-			MapInfoDataSetter<void> setter;
-			ParseMapInfoLower<void>(os, setter);
 		}
 		else
 		{

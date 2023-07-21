@@ -110,21 +110,273 @@ EXTERN_CVAR(am_ovlockedcolor)
 EXTERN_CVAR(am_ovexitcolor)
 EXTERN_CVAR(am_ovteleportcolor)
 
+cvar_t* AMCVars[] = {
+		&am_backcolor,					// Background
+		&am_yourcolor,					// YourColor
+		&am_wallcolor,					// WallColor
+		&am_tswallcolor,				// TwoSidedWallColor
+		&am_fdwallcolor,				// FloorDiffWallColor
+		&am_cdwallcolor,				// CeilingDiffWallColor
+		&am_thingcolor,					// ThingColor
+		&am_thingcolor_item,			// ThingColor_Item
+		&am_thingcolor_countitem,		// ThingColor_CountItem
+		&am_thingcolor_monster,			// ThingColor_Monster
+		&am_thingcolor_nocountmonster,	// ThingColor_NoCountMonster
+		&am_thingcolor_friend,			// ThingColor_Friend
+		&am_thingcolor_projectile,		// ThingColor_Projectile
+		&am_wallcolor,					// SecretWallColor (Same as WallColor)
+		&am_gridcolor,					// GridColor
+		&am_xhaircolor,					// XHairColor
+		&am_notseencolor,				// NotSeenColor
+		&am_lockedcolor,				// LockedColor
+		&am_teleportcolor,				// IntraTeleportColor
+		&am_exitcolor,					// ExitColor
+		&am_backcolor,					// AlmostBackgroundColor
+		NULL
+};
+
+cvar_t* AMCVarsOverlay[] = {
+		&am_backcolor,						// Background
+		&am_ovyourcolor,					// YourColor
+		&am_ovwallcolor,					// WallColor
+		&am_ovtswallcolor,					// TwoSidedWallColor
+		&am_ovfdwallcolor,					// FloorDiffWallColor
+		&am_ovcdwallcolor,					// CeilingDiffWallColor
+		&am_ovthingcolor,					// ThingColor
+		&am_ovthingcolor_item,				// ThingColor_Item
+		&am_ovthingcolor_countitem,			// ThingColor_CountItem
+		&am_ovthingcolor_monster,			// ThingColor_Monster
+		&am_ovthingcolor_nocountmonster,	// ThingColor_NoCountMonster
+		&am_ovthingcolor_friend,			// ThingColor_Friend
+		&am_ovthingcolor_projectile,		// ThingColor_Projectile
+		&am_ovwallcolor,					// SecretWallColor (Same as WallColor)
+		&am_ovgridcolor,					// GridColor
+		&am_ovxhaircolor,					// XHairColor
+		&am_ovnotseencolor,					// NotSeenColor
+		&am_ovlockedcolor,					// LockedColor
+		&am_ovteleportcolor,				// IntraTeleportColor
+		&am_ovexitcolor,					// ExitColor
+		&am_backcolor,						// AlmostBackgroundColor
+		NULL
+};
+
+static const char *ColorNames[] = {
+		"Background",
+		"YourColor",
+		"WallColor",
+		"TwoSidedWallColor",
+		"FloorDiffWallColor",
+		"CeilingDiffWallColor",
+		"ThingColor",
+		"ThingColor_Item",
+		"ThingColor_CountItem",
+		"ThingColor_Monster",
+		"ThingColor_NoCountMonster",
+		"ThingColor_Friend",
+		"ThingColor_Projectile",
+		"SecretWallColor",
+		"GridColor",
+		"XHairColor",
+		"NotSeenColor",
+		"LockedColor",
+		"IntraTeleportColor",
+		"ExitColor",
+		"AlmostBackgroundColor",
+		NULL
+};
+
+static const char* DoomColors[] = {
+		"00 00 00",		// Background
+		"ff ff ff",		// YourColor
+		"fc 00 00",		// WallColor
+		"80 80 80",		// TwoSidedWallColor
+		"bc 78 48",		// FloorDiffWallColor
+		"fc fc 00",		// CeilingDiffWallColor
+		"dark grey",	// ThingColor
+		"navy",			// ThingColor_Item
+		"sky blue",		// ThingColor_CountItem
+		"74 fc 6c",		// ThingColor_Monster
+		"yellow",		// ThingColor_NoCountMonster
+		"dark green",	// ThingColor_Friend
+		"orange",		// ThingColor_Projectile
+		"fc 00 00",		// SecretWallColor
+		"4c 4c 4c",		// GridColor
+		"80 80 80",		// XHairColor
+		"6c 6c 6c",		// NotSeenColor
+		"fc fc 00",		// LockedColor
+		"ff a3 00",		// IntraTeleportColor
+		"ff ff 00",		// ExitColor
+		"10 10 10",		// AlmostBackgroundColor
+		NULL
+};
+
+static const char* RavenColors[] = {
+		"00 00 00",		// Background
+		"ff ff ff",		// YourColor
+		"4c 33 11",		// WallColor
+		"59 5e 57",		// TwoSidedWallColor
+		"d0 b0 85",		// FloorDiffWallColor
+		"68 3c 20",		// CeilingDiffWallColor
+		"38 38 38",		// ThingColor
+		"38 38 38",		// ThingColor_Item
+		"38 38 38",		// ThingColor_CountItem
+		"38 38 38",		// ThingColor_Monster
+		"38 38 38",		// ThingColor_NoCountMonster
+		"38 38 38",		// ThingColor_Friend
+		"38 38 38",		// ThingColor_Projectile
+		"4c 33 11",		// SecretWallColor
+		"4c 4c 4c",		// GridColor
+		"80 80 80",		// XHairColor
+		"6c 6c 6c",		// NotSeenColor
+		"fc fc 00",		// LockedColor
+		"ff a3 00",		// IntraTeleportColor
+		"ff ff 00",		// ExitColor
+		"10 10 10",		// AlmostBackgroundColor
+		NULL
+};
+
+static const char* StrifeColors[] = {
+		"00 00 00",		// Background
+		"ef ef 00",		// YourColor
+		"c7 c3 c3",		// WallColor
+		"77 73 73",		// TwoSidedWallColor
+		"37 3B 5B",		// FloorDiffWallColor
+		"77 73 73",		// CeilingDiffWallColor
+		"fc 00 00",		// ThingColor
+		"fc 00 00",		// ThingColor_Item
+		"fc 00 00",		// ThingColor_CountItem
+		"fc 00 00",		// ThingColor_Monster
+		"fc 00 00",		// ThingColor_NoCountMonster
+		"fc 00 00",		// ThingColor_Friend
+		"fc 00 00",		// ThingColor_Projectile
+		"c7 c3 c3",		// SecretWallColor
+		"4c 4c 4c",		// GridColor
+		"80 80 80",		// XHairColor
+		"6c 6c 6c",		// NotSeenColor
+		"77 73 73",		// LockedColor
+		"ff a3 00",		// IntraTeleportColor
+		"ff ff 00",		// ExitColor
+		"10 10 10",		// AlmostBackgroundColor
+		NULL
+};
+
+// Group palette index and RGB value together:
+typedef struct am_color_s
+{
+	palindex_t index;
+	argb_t rgb;
+} am_color_t;
+
+am_color_t AM_GetColorFromString(const char* colorstring)
+{
+	// Look up the colors in the current palette:
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
+
+	am_color_t c;
+	c.rgb = V_GetColorFromString(colorstring);
+	c.index = V_BestColor(palette_colors, c.rgb);
+	return c;
+}
+
+am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g,
+                        const int b)
+{
+	am_color_t c;
+	c.rgb = argb_t(r, g, b);
+	c.index = V_BestColor(palette_colors, c.rgb);
+	return c;
+}
+
+struct AMColorset
+{
+	enum
+	{
+		Background,
+		YourColor,
+		WallColor,
+		TSWallColor,
+		FDWallColor,
+		CDWallColor,
+		ThingColor,
+		ThingColor_Item,
+		ThingColor_CountItem,
+		ThingColor_Monster,
+		ThingColor_NoCountMonster,
+		ThingColor_Friend,
+		ThingColor_Projectile,
+		SecretWallColor,
+		GridColor,
+		XHairColor,
+		NotSeenColor,
+		LockedColor,
+		IntraTeleportColor,
+		ExitColor,
+		AlmostBackgroundColor,
+		AM_NUM_COLORS
+	};
+
+	am_color_t colors[AM_NUM_COLORS];
+	bool defined; // Used for mods
+
+	AMColorset() : defined(false) { }
+
+	AMColorset& operator=(const AMColorset& other)
+	{
+		for (int i = 0; i < AM_NUM_COLORS; ++i)
+		{
+			colors[i] = other.colors[i];
+		}
+
+		return *this;
+	}
+
+	void setWhite()
+	{
+		colors[0] = AM_GetColorFromString("black");
+		for (int i = 1; i < AM_NUM_COLORS; i++)
+		{
+			colors[i] = AM_GetColorFromString("white");
+		}
+	}
+
+	void initFromColors(const char** basecolors)
+	{
+		for (int i = 0; i < AM_NUM_COLORS; ++i)
+		{
+			colors[i] = AM_GetColorFromString(basecolors[i]);
+		}
+	}
+};
+
+static AMColorset AMColors;
+static AMColorset AMMod;
+static AMColorset AMModOverlay;
+
 BEGIN_COMMAND(resetcustomcolors)
 {
-	am_backcolor = "00 00 3a";
-	am_yourcolor = "fc e8 d8";
-	am_wallcolor = "00 8b ff";
-	am_tswallcolor = "10 32 7e";
-	am_fdwallcolor = "1a 1a 8a";
-	am_cdwallcolor = "00 00 5a";
-	am_thingcolor = "9f d3 ff";
-	am_gridcolor = "44 44 88";
-	am_xhaircolor = "80 80 80";
-	am_notseencolor = "00 22 6e";
-	am_lockedcolor = "bb bb bb";
-	am_exitcolor = "ff ff 00";
-	am_teleportcolor = "ff a3 00";
+	switch (gamemission)
+	{
+	//case heretic:
+	//case hexen:
+	//	for (int i = 0; i < AMColorset::AM_NUM_COLORS; ++i)
+	//	{
+	//		AMCVars[i]->Set(RavenColors[i]);
+	//	}
+	//	break;
+	//case strife:
+	//	for (int i = 0; i < AMColorset::AM_NUM_COLORS; ++i)
+	//	{
+	//		AMCVars[i]->Set(StrifeColors[i]);
+	//	}
+	//	break;
+
+	default:
+		for (int i = 0; i < AMColorset::AM_NUM_COLORS; ++i)
+		{
+			AMCVars[i]->Set(DoomColors[i]);
+		}
+
+	}
 
 	am_ovyourcolor = "fc e8 d8";
 	am_ovwallcolor = "00 8b ff";
@@ -502,269 +754,43 @@ void AM_initVariables()
 }
 
 
-//
-// Colors
-//
-static const char *ColorNames[] = {
-		"Background",
-		"YourColor",
-		"WallColor",
-		"TwoSidedWallColor",
-		"FloorDiffWallColor",
-		"CeilingDiffWallColor",
-		"ThingColor",
-		"ThingColor_Item",
-		"ThingColor_CountItem",
-		"ThingColor_Monster",
-		"ThingColor_NoCountMonster",
-		"ThingColor_Friend",
-		"ThingColor_Projectile",
-		"SecretWallColor",
-		"GridColor",
-		"XHairColor",
-		"NotSeenColor",
-		"LockedColor",
-		"IntraTeleportColor",
-		"AlmostBackgroundColor",
-		"ExitColor",
-		NULL
-};
-
-static const char* DoomColors[] = {
-		"00 00 00",		// Background
-		"ff ff ff",		// YourColor
-		"fc 00 00",		// WallColor
-		"80 80 80",		// TwoSidedWallColor
-		"bc 78 48",		// FloorDiffWallColor
-		"fc fc 00",		// CeilingDiffWallColor
-		"dark grey",	// ThingColor
-		"navy",			// ThingColor_Item
-		"sky blue",		// ThingColor_CountItem
-		"74 fc 6c",		// ThingColor_Monster
-		"yellow",		// ThingColor_NoCountMonster
-		"dark green",	// ThingColor_Friend
-		"orange",		// ThingColor_Projectile
-		"fc 00 00",		// SecretWallColor
-		"4c 4c 4c",		// GridColor
-		"80 80 80",		// XHairColor
-		"6c 6c 6c",		// NotSeenColor
-		"fc fc 00",		// LockedColor
-		"ff a3 00",		// IntraTeleportColor
-		"10 10 10",		// AlmostBackgroundColor
-		"ff ff 00",		// ExitColor
-		NULL
-};
-
-static const char* RavenColors[] = {
-		"00 00 00",		// Background
-		"ff ff ff",		// YourColor
-		"4c 33 11",		// WallColor
-		"59 5e 57",		// TwoSidedWallColor
-		"d0 b0 85",		// FloorDiffWallColor
-		"68 3c 20",		// CeilingDiffWallColor
-		"38 38 38",		// ThingColor
-		"38 38 38",		// ThingColor_Item
-		"38 38 38",		// ThingColor_CountItem
-		"38 38 38",		// ThingColor_Monster
-		"38 38 38",		// ThingColor_NoCountMonster
-		"38 38 38",		// ThingColor_Friend
-		"38 38 38",		// ThingColor_Projectile
-		"4c 33 11",		// SecretWallColor
-		"4c 4c 4c",		// GridColor
-		"80 80 80",		// XHairColor
-		"6c 6c 6c",		// NotSeenColor
-		"fc fc 00",		// LockedColor
-		"ff a3 00",		// IntraTeleportColor
-		"10 10 10",		// AlmostBackgroundColor
-		"ff ff 00",		// ExitColor
-		NULL
-};
-
-static const char* StrifeColors[] = {
-		"00 00 00",		// Background
-		"ef ef 00",		// YourColor
-		"c7 c3 c3",		// WallColor
-		"77 73 73",		// TwoSidedWallColor
-		"37 3B 5B",		// FloorDiffWallColor
-		"77 73 73",		// CeilingDiffWallColor
-		"fc 00 00",		// ThingColor
-		"fc 00 00",		// ThingColor_Item
-		"fc 00 00",		// ThingColor_CountItem
-		"fc 00 00",		// ThingColor_Monster
-		"fc 00 00",		// ThingColor_NoCountMonster
-		"fc 00 00",		// ThingColor_Friend
-		"fc 00 00",		// ThingColor_Projectile
-		"c7 c3 c3",		// SecretWallColor
-		"4c 4c 4c",		// GridColor
-		"80 80 80",		// XHairColor
-		"6c 6c 6c",		// NotSeenColor
-		"77 73 73",		// LockedColor
-		"ff a3 00",		// IntraTeleportColor
-		"10 10 10",		// AlmostBackgroundColor
-		"ff ff 00",		// ExitColor
-		NULL
-};
-
-
-// Group palette index and RGB value together:
-typedef struct am_color_s
-{
-	palindex_t index;
-	argb_t rgb;
-} am_color_t;
-
-am_color_t AM_GetColorFromString(const char* colorstring)
-{
-	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-
-	am_color_t c;
-	c.rgb = V_GetColorFromString(colorstring);
-	c.index = V_BestColor(palette_colors, c.rgb);
-	return c;
-}
-
-am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g,
-                        const int b)
-{
-	am_color_t c;
-	c.rgb = argb_t(r, g, b);
-	c.index = V_BestColor(palette_colors, c.rgb);
-	return c;
-}
-
-struct AMColorset
-{
-	enum
-	{
-		Background,
-		YourColor,
-		WallColor,
-		TSWallColor,
-		FDWallColor,
-		CDWallColor,
-		ThingColor,
-		ThingColor_Item,
-		ThingColor_CountItem,
-		ThingColor_Monster,
-		ThingColor_NoCountMonster,
-		ThingColor_Friend,
-		ThingColor_Projectile,
-		SecretWallColor,
-		GridColor,
-		XHairColor,
-		NotSeenColor,
-		LockedColor,
-		IntraTeleportColor,
-		AlmostBackgroundColor,
-		ExitColor,
-		AM_NUM_COLORS
-	};
-
-	am_color_t colors[AM_NUM_COLORS];
-	bool defined; // Used for mods
-
-	AMColorset() : defined(false) { }
-
-	AMColorset& operator=(const AMColorset& other)
-	{
-		for (int i = 0; i < AM_NUM_COLORS; ++i)
-		{
-			colors[i] = other.colors[i];
-		}
-
-		return *this;
-	}
-
-	void setWhite()
-	{
-		colors[0] = AM_GetColorFromString("black");
-		for (int i = 1; i < AM_NUM_COLORS; i++)
-		{
-			colors[i] = AM_GetColorFromString("white");
-		}
-	}
-
-	void initFromColors(const char** basecolors)
-	{
-		for (int i = 0; i < AM_NUM_COLORS; ++i)
-		{
-			colors[i] = AM_GetColorFromString(basecolors[i]);
-		}
-	}
-};
-
-static AMColorset AMColors;
-static AMColorset AMMod;
-static AMColorset AMModOverlay;
-
-
 void AM_initColors(const bool overlayed)
 {
-	AMColorset& colorset = AMColors; // todo: overlay
-
 	if (overlayed && !am_ovshare)
 	{
-		colorset.colors[AMColorset::YourColor] = AM_GetColorFromString(am_ovyourcolor.cstring());
-		colorset.colors[AMColorset::SecretWallColor] = colorset.colors[AMColorset::WallColor] =
-		    AM_GetColorFromString(am_ovwallcolor.cstring());
-		colorset.colors[AMColorset::TSWallColor] = AM_GetColorFromString(am_ovtswallcolor.cstring());
-		colorset.colors[AMColorset::FDWallColor] = AM_GetColorFromString(am_ovfdwallcolor.cstring());
-		colorset.colors[AMColorset::CDWallColor] = AM_GetColorFromString(am_ovcdwallcolor.cstring());
-		colorset.colors[AMColorset::ThingColor] = AM_GetColorFromString(am_ovthingcolor.cstring());
-		colorset.colors[AMColorset::ThingColor_Item] = AM_GetColorFromString(am_ovthingcolor_item.cstring());
-		colorset.colors[AMColorset::ThingColor_CountItem] = AM_GetColorFromString(am_ovthingcolor_countitem.cstring());
-		colorset.colors[AMColorset::ThingColor_Monster] = AM_GetColorFromString(am_ovthingcolor_monster.cstring());
-		colorset.colors[AMColorset::ThingColor_NoCountMonster] = AM_GetColorFromString(am_ovthingcolor_nocountmonster.cstring());
-		colorset.colors[AMColorset::ThingColor_Friend] = AM_GetColorFromString(am_ovthingcolor_friend.cstring());
-		colorset.colors[AMColorset::ThingColor_Projectile] = AM_GetColorFromString(am_ovthingcolor_projectile.cstring());
-		colorset.colors[AMColorset::GridColor] = AM_GetColorFromString(am_ovgridcolor.cstring());
-		colorset.colors[AMColorset::XHairColor] = AM_GetColorFromString(am_ovxhaircolor.cstring());
-		colorset.colors[AMColorset::NotSeenColor] = AM_GetColorFromString(am_ovnotseencolor.cstring());
-		colorset.colors[AMColorset::LockedColor] = AM_GetColorFromString(am_ovlockedcolor.cstring());
-		colorset.colors[AMColorset::ExitColor] = AM_GetColorFromString(am_ovexitcolor.cstring());
-		colorset.colors[AMColorset::IntraTeleportColor] =
-		    AM_GetColorFromString(am_ovteleportcolor.cstring());
+		if (AMModOverlay.defined)
+		{
+			AMColors = AMModOverlay;
+		}
+		else
+		{
+			for (int i = 1; i < AMColorset::AlmostBackgroundColor; ++i)
+			{
+				AMColors.colors[i] = AM_GetColorFromString(AMCVarsOverlay[i]->cstring());
+			}
+		}
 	}
 	else if (am_usecustomcolors || (overlayed && am_ovshare))
 	{
-		/* Use the custom colors in the am_* cvars */
-		colorset.colors[AMColorset::Background] = AM_GetColorFromString(am_backcolor.cstring());
-		colorset.colors[AMColorset::YourColor] = AM_GetColorFromString(am_yourcolor.cstring());
-		colorset.colors[AMColorset::SecretWallColor] = colorset.colors[AMColorset::WallColor] =
-		    AM_GetColorFromString(am_wallcolor.cstring());
-		colorset.colors[AMColorset::TSWallColor] = AM_GetColorFromString(am_tswallcolor.cstring());
-		colorset.colors[AMColorset::FDWallColor] = AM_GetColorFromString(am_fdwallcolor.cstring());
-		colorset.colors[AMColorset::CDWallColor] = AM_GetColorFromString(am_cdwallcolor.cstring());
-		colorset.colors[AMColorset::ThingColor] = AM_GetColorFromString(am_thingcolor.cstring());
-		colorset.colors[AMColorset::ThingColor_Item] = AM_GetColorFromString(am_thingcolor_item.cstring());
-		colorset.colors[AMColorset::ThingColor_CountItem] = AM_GetColorFromString(am_thingcolor_countitem.cstring());
-		colorset.colors[AMColorset::ThingColor_Monster] = AM_GetColorFromString(am_thingcolor_monster.cstring());
-		colorset.colors[AMColorset::ThingColor_NoCountMonster] = AM_GetColorFromString(am_thingcolor_nocountmonster.cstring());
-		colorset.colors[AMColorset::ThingColor_Friend] = AM_GetColorFromString(am_thingcolor_friend.cstring());
-		colorset.colors[AMColorset::ThingColor_Projectile] = AM_GetColorFromString(am_thingcolor_projectile.cstring());
-		colorset.colors[AMColorset::GridColor] = AM_GetColorFromString(am_gridcolor.cstring());
-		colorset.colors[AMColorset::XHairColor] = AM_GetColorFromString(am_xhaircolor.cstring());
-		colorset.colors[AMColorset::NotSeenColor] = AM_GetColorFromString(am_notseencolor.cstring());
-		colorset.colors[AMColorset::LockedColor] = AM_GetColorFromString(am_lockedcolor.cstring());
-		colorset.colors[AMColorset::ExitColor] = AM_GetColorFromString(am_exitcolor.cstring());
-		colorset.colors[AMColorset::IntraTeleportColor] =
-		    AM_GetColorFromString(am_teleportcolor.cstring());
+		// Use the custom colors in the am_* cvars
+		for (int i = 0; i < AMColorset::AlmostBackgroundColor; ++i)
 		{
-			argb_t ba = AM_GetColorFromString(am_backcolor.cstring()).rgb;
-
-			if (ba.getr() < 16)
-				ba.setr(ba.getr() + 32);
-			if (ba.getg() < 16)
-				ba.setg(ba.getg() + 32);
-			if (ba.getb() < 16)
-				ba.setb(ba.getb() + 32);
-
-			colorset.colors[AMColorset::AlmostBackgroundColor].rgb =
-			    argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
-			colorset.colors[AMColorset::AlmostBackgroundColor].index = V_BestColor(
-			    V_GetDefaultPalette()->colors, colorset.colors[AMColorset::AlmostBackgroundColor].rgb);
+			AMColors.colors[i] = AM_GetColorFromString(AMCVars[i]->cstring());
 		}
+
+		argb_t ba = AM_GetColorFromString(am_backcolor.cstring()).rgb;
+
+		if (ba.getr() < 16)
+			ba.setr(ba.getr() + 32);
+		if (ba.getg() < 16)
+			ba.setg(ba.getg() + 32);
+		if (ba.getb() < 16)
+			ba.setb(ba.getb() + 32);
+
+		AMColors.colors[AMColorset::AlmostBackgroundColor].rgb =
+		    argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
+		AMColors.colors[AMColorset::AlmostBackgroundColor].index = V_BestColor(
+		    V_GetDefaultPalette()->colors, AMColors.colors[AMColorset::AlmostBackgroundColor].rgb);
 	}
 	else
 	{
